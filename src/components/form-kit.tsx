@@ -52,10 +52,10 @@ export function Campo({
   dica,
 }: {
   label: string;
-  erro?: string;
+  erro?: string | undefined;
   children: ReactNode;
-  className?: string;
-  dica?: string;
+  className?: string | undefined;
+  dica?: string | undefined;
 }) {
   return (
     <div className={cn("space-y-1.5", className)}>
@@ -81,12 +81,12 @@ export function CampoTexto({
   label: string;
   valor: string | number;
   onChange: (v: string) => void;
-  erro?: string;
-  placeholder?: string;
+  erro?: string | undefined;
+  placeholder?: string | undefined;
   type?: string;
-  className?: string;
-  dica?: string;
-  disabled?: boolean;
+  className?: string | undefined;
+  dica?: string | undefined;
+  disabled?: boolean | undefined;
 }) {
   return (
     <Campo label={label} erro={erro} className={className} dica={dica}>
@@ -114,10 +114,10 @@ export function CampoArea({
   label: string;
   valor: string;
   onChange: (v: string) => void;
-  erro?: string;
-  placeholder?: string;
+  erro?: string | undefined;
+  placeholder?: string | undefined;
   rows?: number;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <Campo label={label} erro={erro} className={className}>
