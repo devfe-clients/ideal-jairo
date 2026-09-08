@@ -95,7 +95,10 @@ function Veiculos() {
 
   async function submeter() {
     const dados = form.validar();
-    if (!dados) return toast.error("Confira os campos destacados.");
+    if (!dados) {
+      toast.error("Confira os campos destacados.");
+      return;
+    }
     const registro = {
       ...dados,
       id: editando?.id ?? novoId(),
@@ -108,7 +111,10 @@ function Veiculos() {
 
   function consultarPlaca() {
     const placa = formatarPlaca(String(form.valores["placa"] ?? ""));
-    if (placa.length < 7) return toast.error("Informe a placa completa para consultar.");
+    if (placa.length < 7) {
+      toast.error("Informe a placa completa para consultar.");
+      return;
+    }
     registrarAuditoria({
       colecao: "veiculos",
       registroId: placa,

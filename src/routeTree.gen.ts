@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as OrcamentosRouteImport } from './routes/orcamentos'
+import { Route as OsRouteImport } from './routes/os'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +21,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgendarRoute = AgendarRouteImport.update({
+  id: '/agendar',
+  path: '/agendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrcamentosRoute = OrcamentosRouteImport.update({
+  id: '/orcamentos',
+  path: '/orcamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OsRoute = OsRouteImport.update({
+  id: '/os',
+  path: '/os',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VeiculosRoute = VeiculosRouteImport.update({
@@ -31,31 +49,51 @@ const VeiculosRoute = VeiculosRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
+  '/orcamentos': typeof OrcamentosRoute
+  '/os': typeof OsRoute
   '/veiculos': typeof VeiculosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
+  '/orcamentos': typeof OrcamentosRoute
+  '/os': typeof OsRoute
   '/veiculos': typeof VeiculosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
+  '/orcamentos': typeof OrcamentosRoute
+  '/os': typeof OsRoute
   '/veiculos': typeof VeiculosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/veiculos'
+  fullPaths:
+    '/' | '/agendar' | '/clientes' | '/orcamentos' | '/os' | '/veiculos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/veiculos'
-  id: '__root__' | '/' | '/clientes' | '/veiculos'
+  to: '/' | '/agendar' | '/clientes' | '/orcamentos' | '/os' | '/veiculos'
+  id:
+    | '__root__'
+    | '/'
+    | '/agendar'
+    | '/clientes'
+    | '/orcamentos'
+    | '/os'
+    | '/veiculos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgendarRoute: typeof AgendarRoute
   ClientesRoute: typeof ClientesRoute
+  OrcamentosRoute: typeof OrcamentosRoute
+  OsRoute: typeof OsRoute
   VeiculosRoute: typeof VeiculosRoute
 }
 
@@ -68,11 +106,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agendar': {
+      id: '/agendar'
+      path: '/agendar'
+      fullPath: '/agendar'
+      preLoaderRoute: typeof AgendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clientes': {
       id: '/clientes'
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orcamentos': {
+      id: '/orcamentos'
+      path: '/orcamentos'
+      fullPath: '/orcamentos'
+      preLoaderRoute: typeof OrcamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/os': {
+      id: '/os'
+      path: '/os'
+      fullPath: '/os'
+      preLoaderRoute: typeof OsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/veiculos': {
@@ -87,7 +146,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgendarRoute: AgendarRoute,
   ClientesRoute: ClientesRoute,
+  OrcamentosRoute: OrcamentosRoute,
+  OsRoute: OsRoute,
   VeiculosRoute: VeiculosRoute,
 }
 export const routeTree = rootRouteImport
