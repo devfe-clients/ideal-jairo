@@ -15,6 +15,7 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OsRouteImport } from './routes/os'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
+import { Route as OsIdRouteImport } from './routes/os.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,22 +47,29 @@ const VeiculosRoute = VeiculosRouteImport.update({
   path: '/veiculos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OsIdRoute = OsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => OsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
   '/orcamentos': typeof OrcamentosRoute
-  '/os': typeof OsRoute
+  '/os': typeof OsRouteWithChildren
   '/veiculos': typeof VeiculosRoute
+  '/os/$id': typeof OsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
   '/orcamentos': typeof OrcamentosRoute
-  '/os': typeof OsRoute
+  '/os': typeof OsRouteWithChildren
   '/veiculos': typeof VeiculosRoute
+  '/os/$id': typeof OsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,15 +77,29 @@ export interface FileRoutesById {
   '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
   '/orcamentos': typeof OrcamentosRoute
-  '/os': typeof OsRoute
+  '/os': typeof OsRouteWithChildren
   '/veiculos': typeof VeiculosRoute
+  '/os/$id': typeof OsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/agendar' | '/clientes' | '/orcamentos' | '/os' | '/veiculos'
+    | '/'
+    | '/agendar'
+    | '/clientes'
+    | '/orcamentos'
+    | '/os'
+    | '/veiculos'
+    | '/os/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agendar' | '/clientes' | '/orcamentos' | '/os' | '/veiculos'
+  to:
+    | '/'
+    | '/agendar'
+    | '/clientes'
+    | '/orcamentos'
+    | '/os'
+    | '/veiculos'
+    | '/os/$id'
   id:
     | '__root__'
     | '/'
@@ -86,6 +108,7 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/os'
     | '/veiculos'
+    | '/os/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,7 +116,7 @@ export interface RootRouteChildren {
   AgendarRoute: typeof AgendarRoute
   ClientesRoute: typeof ClientesRoute
   OrcamentosRoute: typeof OrcamentosRoute
-  OsRoute: typeof OsRoute
+  OsRoute: typeof OsRouteWithChildren
   VeiculosRoute: typeof VeiculosRoute
 }
 
@@ -141,15 +164,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VeiculosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/os/$id': {
+      id: '/os/$id'
+      path: '/$id'
+      fullPath: '/os/$id'
+      preLoaderRoute: typeof OsIdRouteImport
+      parentRoute: typeof OsRoute
+    }
   }
 }
+
+interface OsRouteChildren {
+  OsIdRoute: typeof OsIdRoute
+}
+
+const OsRouteChildren: OsRouteChildren = {
+  OsIdRoute: OsIdRoute,
+}
+
+const OsRouteWithChildren = OsRoute._addFileChildren(OsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendarRoute: AgendarRoute,
   ClientesRoute: ClientesRoute,
   OrcamentosRoute: OrcamentosRoute,
-  OsRoute: OsRoute,
+  OsRoute: OsRouteWithChildren,
   VeiculosRoute: VeiculosRoute,
 }
 export const routeTree = rootRouteImport
