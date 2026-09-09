@@ -14,8 +14,8 @@ export function ImpressaoOS({
   mecanicos,
 }: {
   os: OrdemServico;
-  cliente?: Cliente;
-  veiculo?: Veiculo;
+  cliente?: Cliente | undefined;
+  veiculo?: Veiculo | undefined;
   mecanicos: Usuario[];
 }) {
   const t = totaisOS(os, os.tipo === "orcamento");
@@ -67,7 +67,7 @@ export function ImpressaoOS({
       </table>
     );
 
-  const Vistoria = ({ titulo, c }: { titulo: string; c?: Checklist }) => {
+  const Vistoria = ({ titulo, c }: { titulo: string; c?: Checklist | undefined }) => {
     if (!c) return null;
     const marcados = Object.entries(c.itens).filter(([, v]) => v);
     return (
