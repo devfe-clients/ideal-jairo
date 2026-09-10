@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OsRouteImport } from './routes/os'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
@@ -36,6 +37,11 @@ const AgendarRoute = AgendarRouteImport.update({
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstoqueRoute = EstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrcamentosRoute = OrcamentosRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
+  '/estoque': typeof EstoqueRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRouteWithChildren
   '/veiculos': typeof VeiculosRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
+  '/estoque': typeof EstoqueRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRouteWithChildren
   '/veiculos': typeof VeiculosRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/agendar': typeof AgendarRoute
   '/clientes': typeof ClientesRoute
+  '/estoque': typeof EstoqueRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRouteWithChildren
   '/veiculos': typeof VeiculosRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/agendar'
     | '/clientes'
+    | '/estoque'
     | '/orcamentos'
     | '/os'
     | '/veiculos'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/agendar'
     | '/clientes'
+    | '/estoque'
     | '/orcamentos'
     | '/os'
     | '/veiculos'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/agendar'
     | '/clientes'
+    | '/estoque'
     | '/orcamentos'
     | '/os'
     | '/veiculos'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   AgendarRoute: typeof AgendarRoute
   ClientesRoute: typeof ClientesRoute
+  EstoqueRoute: typeof EstoqueRoute
   OrcamentosRoute: typeof OrcamentosRoute
   OsRoute: typeof OsRouteWithChildren
   VeiculosRoute: typeof VeiculosRoute
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estoque': {
+      id: '/estoque'
+      path: '/estoque'
+      fullPath: '/estoque'
+      preLoaderRoute: typeof EstoqueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orcamentos': {
@@ -209,6 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   AgendarRoute: AgendarRoute,
   ClientesRoute: ClientesRoute,
+  EstoqueRoute: EstoqueRoute,
   OrcamentosRoute: OrcamentosRoute,
   OsRoute: OsRouteWithChildren,
   VeiculosRoute: VeiculosRoute,
