@@ -85,27 +85,29 @@ function DetalheOS() {
   const { salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
 
   const original = ordens.find((o) => o.id === id);
-  const [os, setOS] = useState<OrdemServico | null>(null);
+  const [osState, setOS] = useState<OrdemServico | null>(null);
 
   useEffect(() => {
-    if (original && !os) setOS(structuredClone(original));
-  }, [original, os]);
+    if (original && !osState) setOS(structuredClone(original));
+  }, [original, osState]);
 
-  const cliente = clientes.find((c) => c.id === os?.clienteId);
-  const veiculo = veiculos.find((v) => v.id === os?.veiculoId);
+  const cliente = clientes.find((c) => c.id === osState?.clienteId);
+  const veiculo = veiculos.find((v) => v.id === osState?.veiculoId);
   const mecanicos = usuarios.filter((u) => u.perfil === "Mecânico" || u.perfil === "Responsável técnico");
   const totais = useMemo(
-    () => (os ? totaisOS(os, os.tipo === "orcamento") : null),
-    [os],
+    () => (osState ? totaisOS(osState, osState.tipo === "orcamento") : null),
+    [osState],
   );
 
-  if (!os || !totais) {
+  if (!osState || !totais) {
     return (
       <AppLayout titulo="Ordem de serviço">
         <Vazio mensagem="Carregando ou registro não encontrado." />
       </AppLayout>
     );
   }
+
+  const os: OrdemServico = osState;
 
   const atualizar = (campo: keyof OrdemServico, valor: unknown) =>
     setOS((atual) => (atual ? { ...atual, [campo]: valor } : atual));
@@ -176,7 +178,6 @@ function DetalheOS() {
   }
 
   async function salvar(silencioso = false) {
-    if (!os) return false;
     const erros: string[] = [];
     for (const i of os.itens) {
       const r = itemSchema.safeParse(i);
