@@ -15,8 +15,11 @@ import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as EstoqueRouteImport } from './routes/estoque'
+import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OsRouteImport } from './routes/os'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
 import { Route as OsIdRouteImport } from './routes/os.$id'
 
@@ -50,6 +53,11 @@ const EstoqueRoute = EstoqueRouteImport.update({
   path: '/estoque',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FinanceiroRoute = FinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrcamentosRoute = OrcamentosRouteImport.update({
   id: '/orcamentos',
   path: '/orcamentos',
@@ -58,6 +66,16 @@ const OrcamentosRoute = OrcamentosRouteImport.update({
 const OsRoute = OsRouteImport.update({
   id: '/os',
   path: '/os',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VeiculosRoute = VeiculosRouteImport.update({
@@ -78,8 +96,11 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof ClientesRoute
   '/compras': typeof ComprasRoute
   '/estoque': typeof EstoqueRoute
+  '/financeiro': typeof FinanceiroRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRouteWithChildren
+  '/relatorios': typeof RelatoriosRoute
+  '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
   '/os/$id': typeof OsIdRoute
 }
@@ -90,8 +111,11 @@ export interface FileRoutesByTo {
   '/clientes': typeof ClientesRoute
   '/compras': typeof ComprasRoute
   '/estoque': typeof EstoqueRoute
+  '/financeiro': typeof FinanceiroRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRouteWithChildren
+  '/relatorios': typeof RelatoriosRoute
+  '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
   '/os/$id': typeof OsIdRoute
 }
@@ -103,8 +127,11 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRoute
   '/compras': typeof ComprasRoute
   '/estoque': typeof EstoqueRoute
+  '/financeiro': typeof FinanceiroRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRouteWithChildren
+  '/relatorios': typeof RelatoriosRoute
+  '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
   '/os/$id': typeof OsIdRoute
 }
@@ -117,8 +144,11 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/compras'
     | '/estoque'
+    | '/financeiro'
     | '/orcamentos'
     | '/os'
+    | '/relatorios'
+    | '/usuarios'
     | '/veiculos'
     | '/os/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -129,8 +159,11 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/compras'
     | '/estoque'
+    | '/financeiro'
     | '/orcamentos'
     | '/os'
+    | '/relatorios'
+    | '/usuarios'
     | '/veiculos'
     | '/os/$id'
   id:
@@ -141,8 +174,11 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/compras'
     | '/estoque'
+    | '/financeiro'
     | '/orcamentos'
     | '/os'
+    | '/relatorios'
+    | '/usuarios'
     | '/veiculos'
     | '/os/$id'
   fileRoutesById: FileRoutesById
@@ -154,8 +190,11 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRoute
   ComprasRoute: typeof ComprasRoute
   EstoqueRoute: typeof EstoqueRoute
+  FinanceiroRoute: typeof FinanceiroRoute
   OrcamentosRoute: typeof OrcamentosRoute
   OsRoute: typeof OsRouteWithChildren
+  RelatoriosRoute: typeof RelatoriosRoute
+  UsuariosRoute: typeof UsuariosRoute
   VeiculosRoute: typeof VeiculosRoute
 }
 
@@ -203,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstoqueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/financeiro': {
+      id: '/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof FinanceiroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orcamentos': {
       id: '/orcamentos'
       path: '/orcamentos'
@@ -215,6 +261,20 @@ declare module '@tanstack/react-router' {
       path: '/os'
       fullPath: '/os'
       preLoaderRoute: typeof OsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/veiculos': {
@@ -251,8 +311,11 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRoute,
   ComprasRoute: ComprasRoute,
   EstoqueRoute: EstoqueRoute,
+  FinanceiroRoute: FinanceiroRoute,
   OrcamentosRoute: OrcamentosRoute,
   OsRoute: OsRouteWithChildren,
+  RelatoriosRoute: RelatoriosRoute,
+  UsuariosRoute: UsuariosRoute,
   VeiculosRoute: VeiculosRoute,
 }
 export const routeTree = rootRouteImport
