@@ -41,7 +41,13 @@ export const Route = createFileRoute("/relatorios")({
   component: RelatoriosPage,
 });
 
-const CORES = ["#f5c518", "#e0a800", "#9a9a9a", "#5f5f5f", "#3d3d3d"];
+const CORES = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+];
 
 function RelatoriosPage() {
   const { pode } = useAuth();

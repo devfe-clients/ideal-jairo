@@ -48,7 +48,7 @@ import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL } from "@/lib/empresa";
 import { MAX_FOTOS, blobParaDataUrl, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
 import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/os/$id")({
+export const Route = createFileRoute("/os_/$id")({
   head: () => ({
     meta: [
       { title: "Ordem de serviço | Oficina Ideal Jairo" },
