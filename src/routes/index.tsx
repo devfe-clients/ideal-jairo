@@ -19,7 +19,7 @@ import { Vazio } from "@/components/form-kit";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel | Oficina Ideal Jairo" },
+      { title: "Oficina | Ideal Jairo" },
       {
         name: "description",
         content:

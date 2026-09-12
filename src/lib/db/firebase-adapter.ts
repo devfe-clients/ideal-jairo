@@ -1,41 +1,143 @@
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+  serverTimestamp,
+  limit,
+} from "firebase/firestore";
+import { firestore } from "../firebase";
 import type { ColecaoNome, DBAdapter, Registro } from "./types";
-import { firebaseConfigurado } from "../firebaseConfig";
 
 export { firebaseConfigurado } from "../firebaseConfig";
 
-/**
- * ESTRUTURA PRONTA PARA O FIREBASE (ainda não ativada).
- *
- * Como ligar (sessão 2):
- * 1. O SDK web `firebase` já está instalado.
- * 2. Preencher as variáveis no Vercel / .env.local:
- *    VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID,
- *    VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID,
- *    VITE_FIREBASE_APP_ID e, opcionalmente, VITE_FIREBASE_MEASUREMENT_ID.
- * 3. Implementar cada operação com os serviços exportados por ../firebase.
- *
- * OTIMIZAÇÃO DE CUSTO (meta < R$ 20/mês):
- * - Firestore cobra por LEITURA de documento. Regra do projeto: nenhuma tela
- *   faz leitura em loop; usamos cache local + listeners apenas nas coleções
- *   abertas na tela (onSnapshot em query com limit/where, nunca coleção inteira).
- * - Documentos "gordos": a OS guarda itens e checklist embutidos (1 leitura por OS
- *   em vez de N leituras por item).
- * - Índices compostos apenas para as buscas usadas (placa, telefone, status, data).
- * - Fotos NUNCA no Firestore: só a URL. Ver src/lib/fotos.ts.
- */
+const MAPA_COLECAO: Record<ColecaoNome, string> = {
+  clientes:     "clientes",
+  veiculos:     "veiculos",
+  ordens:       "ordens_de_servico",
+  pecas:        "estoque",
+  servicos:     "estoque",
+  compras:      "compras",
+  lancamentos:  "financeiro/contas_a_receber/lancamentos", 
+  agendamentos: "agendamentos",
+  usuarios:     "usuarios",
+  auditoria:    "auditoria",
+  config:       "configuracoes",
+};
+
+function caminhoLancamento(tipo?: string): string {
+  return tipo === "pagar"
+    ? "financeiro/contas_a_pagar/lancamentos"
+    : "financeiro/contas_a_receber/lancamentos";
+}
+
+function caminhoFirestore(colecao: ColecaoNome, tipoLancamento?: string): string {
+  if (colecao === "lancamentos") return caminhoLancamento(tipoLancamento);
+  return MAPA_COLECAO[colecao];
+}
+
+/** Converte Timestamps do Firestore para string ISO, preserva o resto. */
+function normalizar<T extends Registro>(id: string, data: Record<string, unknown>): T {
+  const out: Record<string, unknown> = { id };
+  for (const [k, v] of Object.entries(data)) {
+    if (v && typeof v === "object" && "toDate" in v && typeof (v as { toDate: unknown }).toDate === "function") {
+      out[k] = (v as { toDate: () => Date }).toDate().toISOString();
+    } else {
+      out[k] = v;
+    }
+  }
+  return out as T;
+}
 
 export const firebaseAdapter: DBAdapter = {
   nome: "firebase",
-  async listar<T extends Registro>(_colecao: ColecaoNome): Promise<T[]> {
-    throw new Error("Firebase ainda não conectado. Configure as chaves VITE_FIREBASE_*.");
+
+  async listar<T extends Registro>(colecao: ColecaoNome): Promise<T[]> {
+    if (!firestore) throw new Error("Firebase não inicializado.");
+
+    if (colecao === "lancamentos") {
+      const [snapR, snapP] = await Promise.all([
+        getDocs(query(
+          collection(firestore, "financeiro/contas_a_receber/lancamentos"),
+          orderBy("criadoEm", "desc"), limit(500),
+        )),
+        getDocs(query(
+          collection(firestore, "financeiro/contas_a_pagar/lancamentos"),
+          orderBy("criadoEm", "desc"), limit(500),
+        )),
+      ]);
+      return [
+        ...snapR.docs.map((d) => normalizar<T>(d.id, d.data())),
+        ...snapP.docs.map((d) => normalizar<T>(d.id, d.data())),
+      ];
+    }
+
+    const snap = await getDocs(
+      query(
+        collection(firestore, caminhoFirestore(colecao)),
+        orderBy("criadoEm", "desc"),
+        limit(1000),
+      ),
+    );
+    return snap.docs.map((d) => normalizar<T>(d.id, d.data()));
   },
-  async salvar<T extends Registro>(_colecao: ColecaoNome, _registro: T): Promise<T> {
-    throw new Error("Firebase ainda não conectado.");
+
+  async salvar<T extends Registro>(colecao: ColecaoNome, registro: T): Promise<T> {
+    if (!firestore) throw new Error("Firebase não inicializado.");
+
+    const tipo = (registro as Record<string, unknown>)["tipo"] as string | undefined;
+    const caminho = caminhoFirestore(colecao, tipo);
+    const ref = doc(firestore, caminho, registro.id);
+
+    const { id, ...dados } = registro;
+    void id;
+
+    const agora = new Date().toISOString();
+    const jaExiste = (await getDoc(ref)).exists();
+    const usuarioId = (dados as Record<string, unknown>)["criadoPor"] as string ?? "sistema";
+
+    const payload = {
+      ...dados,
+      criadoPor: usuarioId,
+      atualizadoPor: usuarioId,
+      atualizadoEm: serverTimestamp(),
+      ...(jaExiste ? {} : { criadoEm: serverTimestamp() }),
+    };
+    await setDoc(ref, payload, { merge: true });
+
+    return { ...registro, atualizadoEm: agora } as T;
   },
-  async remover() {
-    throw new Error("Firebase ainda não conectado.");
+
+  async remover(colecao: ColecaoNome, id: string): Promise<void> {
+    if (!firestore) throw new Error("Firebase não inicializado.");
+
+    if (colecao === "lancamentos") {
+      await Promise.allSettled([
+        deleteDoc(doc(firestore, `financeiro/contas_a_receber/lancamentos/${id}`)),
+        deleteDoc(doc(firestore, `financeiro/contas_a_pagar/lancamentos/${id}`)),
+      ]);
+      return;
+    }
+    await deleteDoc(doc(firestore, caminhoFirestore(colecao), id));
   },
-  observar() {
-    return () => {};
+
+  observar(colecao: ColecaoNome, cb: () => void): () => void {
+    if (!firestore) return () => {};
+
+    if (colecao === "lancamentos") {
+      const u1 = onSnapshot(collection(firestore, "financeiro/contas_a_receber/lancamentos"), cb);
+      const u2 = onSnapshot(collection(firestore, "financeiro/contas_a_pagar/lancamentos"), cb);
+      return () => { u1(); u2(); };
+    }
+
+    return onSnapshot(
+      query(collection(firestore, caminhoFirestore(colecao)), orderBy("criadoEm", "desc")),
+      cb,
+    );
   },
 };

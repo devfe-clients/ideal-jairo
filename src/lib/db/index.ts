@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { localAdapter, lerSync } from "./local-adapter";
+import { localAdapter } from "./local-adapter";
 import { firebaseAdapter, firebaseConfigurado } from "./firebase-adapter";
 import type { ColecaoNome, DBAdapter, EventoAuditoria, Registro } from "./types";
 
-/** Troca de adaptador em um único ponto. */
 export const db: DBAdapter = firebaseConfigurado ? firebaseAdapter : localAdapter;
 export const modoBanco = db.nome;
 
 export const novoId = () =>
   `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
 
-export function registrarAuditoria(
-  evento: Omit<EventoAuditoria, "id" | "data">,
-) {
+export function registrarAuditoria(evento: Omit<EventoAuditoria, "id" | "data">) {
   const item: EventoAuditoria = { ...evento, id: novoId(), data: new Date().toISOString() };
   void db.salvar("auditoria", item as unknown as Registro);
 }
@@ -35,7 +32,7 @@ export function useColecao<T extends Registro>(colecao: ColecaoNome) {
 
   const salvar = useCallback(
     async (registro: T, usuario = "sistema") => {
-      const existente = lerSync<T>(colecao).some((d) => d.id === registro.id);
+      const existente = dados.some((d) => d.id === registro.id);
       await db.salvar(colecao, registro);
       registrarAuditoria({
         colecao,
@@ -45,7 +42,7 @@ export function useColecao<T extends Registro>(colecao: ColecaoNome) {
       });
       return registro;
     },
-    [colecao],
+    [colecao, dados],
   );
 
   const remover = useCallback(

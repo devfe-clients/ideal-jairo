@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function role() {
-      return signedIn() && request.auth.token.ativo == true ? request.auth.token.perfil : null;
+      return signedIn() && (request.auth.token.ativo == true || request.auth.token.ativo == 'true') ? request.auth.token.perfil : null;
     }
     function isAdmin() { return role() == 'admin'; }
     function isTecnico() { return role() == 'tecnico'; }

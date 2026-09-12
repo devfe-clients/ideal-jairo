@@ -98,7 +98,7 @@ function Clientes() {
       id: editando?.id ?? novoId(),
       criadoEm: editando?.criadoEm ?? new Date().toISOString(),
     } as Cliente;
-    await salvar(registro, usuario.nome);
+    await salvar(registro, usuario?.nome ?? "sistema");
     toast.success(editando ? "Cliente atualizado." : "Cliente cadastrado.");
     setAberto(false);
   }
@@ -186,7 +186,7 @@ function Clientes() {
                         variant="ghost"
                         className="text-destructive"
                         onClick={async () => {
-                          await remover(c.id, usuario.nome);
+                          await remover(c.id, usuario?.nome ?? "sistema");
                           toast.success("Cliente excluído (registro em auditoria).");
                         }}
                       >

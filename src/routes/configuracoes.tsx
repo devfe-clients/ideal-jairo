@@ -77,7 +77,7 @@ function ConfiguracoesPage() {
       return;
     }
     const registro: ConfigRegistro = { ...validado.data, id: config.id };
-    await salvar(registro, usuario.nome);
+    await salvar(registro, usuario?.nome ?? "sistema");
     setConfig(registro);
     toast.success("Configurações salvas.");
   }

@@ -14,6 +14,7 @@ import {
   Wallet,
   LayoutDashboard,
   ShieldCheck,
+  LogOut,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg.asset.json";
 import { cn } from "@/lib/utils";
@@ -95,7 +96,7 @@ export function AppLayout({
   children: ReactNode;
 }) {
   const [aberto, setAberto] = useState(false);
-  const { usuario } = useAuth();
+  const { usuario, sair } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,11 +106,19 @@ export function AppLayout({
           <NavLinks />
         </div>
         <div className="border-t border-sidebar-border p-3 text-xs text-muted-foreground">
-          <p className="font-medium text-foreground">{usuario.nome}</p>
-          <p>{usuario.perfil}</p>
+          <p className="font-medium text-foreground">{usuario?.nome}</p>
+          <p>{usuario?.perfil}</p>
           <Badge variant="outline" className="mt-2 text-[10px]">
             Banco: {modoBanco === "local" ? "local (Firebase pendente)" : "Firebase"}
           </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-full justify-start gap-2 text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => void sair()}
+          >
+            <LogOut className="h-3.5 w-3.5" /> Sair
+          </Button>
         </div>
       </aside>
 

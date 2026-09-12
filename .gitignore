@@ -15,7 +15,10 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
-
+.env.local
+.env
+.env.exemple
+serviceAccountKey.json
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

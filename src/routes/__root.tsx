@@ -8,7 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-
+import { useAuth } from "../lib/auth";
+import { LoginScreen } from "../components/LoginScreen";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
@@ -112,6 +113,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+function AuthGuard() {
+  const { usuario, carregando } = useAuth();
+  if (carregando) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground text-sm">Carregando...</p>
+      </div>
+    );
+  }
+  if (!usuario) {
+    return <LoginScreen />;
+  }
+  return <Outlet />;
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
@@ -130,14 +146,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    semear();
+    if (import.meta.env.DEV) semear();
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <AuthGuard />
         <Toaster position="top-right" richColors />
       </AuthProvider>
     </QueryClientProvider>
