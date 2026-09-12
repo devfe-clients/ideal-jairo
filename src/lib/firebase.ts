@@ -2,7 +2,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
-import { firebaseConfig, firebaseConfigurado } from "./firebaseConfig";
+import { firebaseConfig, firebaseConfigurado, validarFirebaseConfig } from "./firebaseConfig";
 
 /**
  * Serviços do cliente Firebase. Permanecem nulos no servidor e enquanto as
@@ -12,7 +12,7 @@ export const firebaseApp: FirebaseApp | null =
   firebaseConfigurado && typeof window !== "undefined"
     ? getApps().length > 0
       ? getApp()
-      : initializeApp(firebaseConfig)
+      : initializeApp(validarFirebaseConfig())
     : null;
 
 export const auth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null;

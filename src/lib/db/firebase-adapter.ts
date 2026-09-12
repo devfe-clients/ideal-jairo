@@ -1,6 +1,8 @@
 import type { ColecaoNome, DBAdapter, Registro } from "./types";
 import { firebaseConfigurado } from "../firebaseConfig";
 
+export { firebaseConfigurado } from "../firebaseConfig";
+
 /**
  * ESTRUTURA PRONTA PARA O FIREBASE (ainda não ativada).
  *

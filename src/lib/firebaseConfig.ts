@@ -1,3 +1,5 @@
+import type { FirebaseOptions } from "firebase/app";
+
 export const firebaseConfig = {
   apiKey: import.meta.env["VITE_FIREBASE_API_KEY"] as string | undefined,
   authDomain: import.meta.env["VITE_FIREBASE_AUTH_DOMAIN"] as string | undefined,
@@ -21,10 +23,25 @@ export const firebaseConfigurado = camposObrigatorios.every(
   (campo) => firebaseConfig[campo]?.trim(),
 );
 
-export function validarFirebaseConfig() {
+export function validarFirebaseConfig(): FirebaseOptions {
   const ausentes = camposObrigatorios.filter((campo) => !firebaseConfig[campo]?.trim());
   if (ausentes.length > 0) {
     throw new Error(`Firebase não configurado. Variáveis ausentes: ${ausentes.join(", ")}.`);
   }
-  return firebaseConfig;
+
+  const obrigatorio = (campo: (typeof camposObrigatorios)[number]) => {
+    const valor = firebaseConfig[campo];
+    if (!valor) throw new Error(`Firebase não configurado: ${campo}.`);
+    return valor;
+  };
+
+  return {
+    apiKey: obrigatorio("apiKey"),
+    authDomain: obrigatorio("authDomain"),
+    projectId: obrigatorio("projectId"),
+    storageBucket: obrigatorio("storageBucket"),
+    messagingSenderId: obrigatorio("messagingSenderId"),
+    appId: obrigatorio("appId"),
+    measurementId: firebaseConfig.measurementId,
+  };
 }
