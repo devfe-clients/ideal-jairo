@@ -1,0 +1,223 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() {
+      return signedIn() && request.auth.token.ativo == true ? request.auth.token.perfil : null;
+    }
+    function isAdmin() { return role() == 'admin'; }
+    function isTecnico() { return role() == 'tecnico'; }
+    function isAdministrativo() { return role() == 'administrativo'; }
+    function isMecanico() { return role() == 'mecanico'; }
+    function isBackoffice() { return isAdmin() || isTecnico() || isAdministrativo(); }
+    function hasOnly(data, fields) { return data.keys().hasOnly(fields); }
+
+    function validCliente(data) {
+      return hasOnly(data, ['nome', 'cpfCnpj', 'telefone', 'email', 'cep', 'endereco',
+        'numero', 'bairro', 'cidade', 'uf', 'observacoes', 'consentimentoLgpd',
+        'criadoEm', 'atualizadoEm', 'criadoPor', 'atualizadoPor'])
+        && data.nome is string && data.nome.size() >= 3 && data.nome.size() <= 120
+        && data.cpfCnpj is string && data.cpfCnpj.size() >= 11 && data.cpfCnpj.size() <= 18
+        && data.telefone is string && data.telefone.size() >= 10 && data.telefone.size() <= 20
+        && data.consentimentoLgpd is bool
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp
+        && data.criadoPor is string && data.atualizadoPor is string;
+    }
+
+    function validVeiculo(data) {
+      return hasOnly(data, ['clienteId', 'placa', 'marca', 'modelo', 'ano', 'cor', 'motor',
+        'chassi', 'km', 'observacoes', 'criadoEm', 'atualizadoEm', 'criadoPor', 'atualizadoPor'])
+        && data.clienteId is string
+        && exists(/databases/$(database)/documents/clientes/$(data.clienteId))
+        && data.placa is string && data.placa.matches('^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$')
+        && data.marca is string && data.marca.size() <= 40
+        && data.modelo is string && data.modelo.size() <= 80
+        && data.ano is int && data.ano >= 1900 && data.ano <= 2200
+        && data.km is number && data.km >= 0 && data.km <= 3000000
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp;
+    }
+
+    function validOrdem(data, tipo) {
+      return hasOnly(data, ['numero', 'tipo', 'clienteId', 'veiculoId', 'status', 'aprovacao',
+        'prioridade', 'emissao', 'previsao', 'saida', 'km', 'reclamacao', 'diagnostico',
+        'observacoes', 'garantiaDias', 'mecanicoId', 'itens', 'descontoGeral',
+        'checklistEntradaId', 'checklistSaidaId', 'criadoEm', 'atualizadoEm',
+        'criadoPor', 'atualizadoPor'])
+        && data.tipo == tipo
+        && data.numero is string && data.numero.size() <= 30
+        && data.clienteId is string
+        && exists(/databases/$(database)/documents/clientes/$(data.clienteId))
+        && data.veiculoId is string
+        && exists(/databases/$(database)/documents/veiculos/$(data.veiculoId))
+        && data.status in ['Agendado', 'Aguardando atendimento', 'Em andamento',
+          'Aguardando peça/aprovação', 'Finalizado', 'Entregue/Fechado']
+        && data.aprovacao in ['Aguardando aprovação', 'Aprovado', 'Aprovado parcial', 'Recusado']
+        && data.prioridade in ['Baixa', 'Média', 'Alta']
+        && data.km is number && data.km >= 0
+        && data.itens is list && data.itens.size() <= 200
+        && data.descontoGeral is number && data.descontoGeral >= 0
+        && data.garantiaDias is int && data.garantiaDias >= 0 && data.garantiaDias <= 3650
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp;
+    }
+
+    function validEstoque(data) {
+      return hasOnly(data, ['nome', 'codigo', 'marca', 'fornecedor', 'custo', 'precoVenda',
+        'quantidade', 'estoqueMinimo', 'localizacao', 'observacoes', 'criadoEm', 'atualizadoEm'])
+        && data.nome is string && data.nome.size() >= 2 && data.nome.size() <= 120
+        && data.custo is number && data.custo >= 0
+        && data.precoVenda is number && data.precoVenda >= 0
+        && data.quantidade is number && data.quantidade >= 0
+        && data.estoqueMinimo is number && data.estoqueMinimo >= 0
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp;
+    }
+
+    function validCompra(data) {
+      return hasOnly(data, ['ordemServicoId', 'descricao', 'fornecedor', 'quantidade',
+        'valorPago', 'valorVenda', 'status', 'dataSolicitacao', 'previsaoEntrega', 'nota',
+        'paraEstoque', 'criadoEm', 'atualizadoEm', 'criadoPor', 'atualizadoPor'])
+        && data.descricao is string && data.descricao.size() >= 2 && data.descricao.size() <= 160
+        && data.fornecedor is string && data.fornecedor.size() >= 2 && data.fornecedor.size() <= 80
+        && data.quantidade is number && data.quantidade > 0
+        && data.valorPago is number && data.valorPago >= 0
+        && data.valorVenda is number && data.valorVenda >= 0
+        && data.status in ['A comprar', 'Pedido realizado', 'Aguardando entrega', 'Recebida',
+          'Reservada', 'Instalada', 'Devolvida/Cancelada']
+        && data.paraEstoque is bool
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp;
+    }
+
+    function validLancamento(data, tipo) {
+      return hasOnly(data, ['tipo', 'descricao', 'valor', 'vencimento', 'pagoEm',
+        'formaPagamento', 'categoria', 'ordemServicoId', 'clienteId', 'criadoEm',
+        'atualizadoEm', 'criadoPor', 'atualizadoPor'])
+        && data.tipo == tipo
+        && data.descricao is string && data.descricao.size() >= 2 && data.descricao.size() <= 160
+        && data.valor is number && data.valor > 0
+        && data.formaPagamento in ['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência']
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp;
+    }
+
+    function validAgendamento(data) {
+      return hasOnly(data, ['nome', 'cpfCnpj', 'telefone', 'email', 'endereco', 'placa',
+        'marca', 'modelo', 'ano', 'km', 'servico', 'descricao', 'data', 'hora', 'status',
+        'consentimentoLgpd', 'criadoEm', 'atualizadoEm'])
+        && data.nome is string && data.nome.size() >= 3 && data.nome.size() <= 120
+        && data.cpfCnpj is string && data.cpfCnpj.size() >= 11 && data.cpfCnpj.size() <= 18
+        && data.telefone is string && data.telefone.size() >= 10 && data.telefone.size() <= 20
+        && data.placa is string && data.placa.matches('^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$')
+        && data.marca is string && data.marca.size() <= 40
+        && data.modelo is string && data.modelo.size() <= 80
+        && data.ano is int && data.ano >= 1900 && data.ano <= 2200
+        && data.km is number && data.km >= 0
+        && data.servico is string && data.servico.size() >= 2 && data.servico.size() <= 120
+        && data.data is string && data.data.size() == 10
+        && data.hora is string && data.hora.size() == 5
+        && data.status == 'Pendente'
+        && data.consentimentoLgpd == true
+        && data.criadoEm == request.time && data.atualizadoEm == request.time;
+    }
+
+    function validChecklist(data) {
+      return hasOnly(data, ['ordemServicoId', 'tipo', 'hodometro', 'combustivel', 'itens',
+        'observacoes', 'fotos', 'criadoEm', 'atualizadoEm', 'criadoPor', 'atualizadoPor'])
+        && data.ordemServicoId is string
+        && exists(/databases/$(database)/documents/ordens_de_servico/$(data.ordemServicoId))
+        && data.tipo in ['entrada', 'saida']
+        && data.hodometro is number && data.hodometro >= 0
+        && data.combustivel is string && data.combustivel.size() <= 30
+        && data.itens is map
+        && data.observacoes is string && data.observacoes.size() <= 1000
+        && data.fotos is list && data.fotos.size() <= 15
+        && data.criadoEm is timestamp && data.atualizadoEm is timestamp;
+    }
+
+    function validAudit(data) {
+      return hasOnly(data, ['colecao', 'registroId', 'acao', 'usuarioId', 'data', 'detalhe'])
+        && data.colecao is string && data.colecao.size() <= 80
+        && data.registroId is string && data.registroId.size() <= 128
+        && data.acao is string
+        && data.usuarioId == request.auth.uid && data.data == request.time
+        && (!('detalhe' in data) || (data.detalhe is string && data.detalhe.size() <= 1000));
+    }
+
+    match /clientes/{id} {
+      allow read: if isBackoffice();
+      allow create, update: if isBackoffice() && validCliente(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /veiculos/{id} {
+      allow read: if isBackoffice() || isMecanico();
+      allow create, update: if isBackoffice() && validVeiculo(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /ordens_de_servico/{id} {
+      allow read: if signedIn();
+      allow create: if isBackoffice() && validOrdem(request.resource.data, 'os');
+      allow update: if validOrdem(request.resource.data, 'os')
+        && (isBackoffice() || (isMecanico()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'diagnostico', 'observacoes', 'mecanicoId', 'itens',
+            'checklistEntradaId', 'checklistSaidaId', 'atualizadoEm', 'atualizadoPor'
+          ])));
+      allow delete: if isAdmin();
+    }
+    match /orcamentos/{id} {
+      allow read: if signedIn();
+      allow create, update: if isBackoffice() && validOrdem(request.resource.data, 'orcamento');
+      allow delete: if isAdmin();
+    }
+    match /estoque/{id} {
+      allow read: if isAdmin() || isTecnico();
+      allow create, update: if (isAdmin() || isTecnico()) && validEstoque(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /compras/{id} {
+      allow read: if isAdmin() || isTecnico();
+      allow create, update: if (isAdmin() || isTecnico()) && validCompra(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /financeiro/contas_a_receber/lancamentos/{id} {
+      allow read: if isAdmin() || isAdministrativo();
+      allow create, update: if (isAdmin() || isAdministrativo())
+        && validLancamento(request.resource.data, 'receber');
+      allow delete: if isAdmin();
+    }
+    match /financeiro/contas_a_pagar/lancamentos/{id} {
+      allow read: if isAdmin() || isAdministrativo();
+      allow create, update: if (isAdmin() || isAdministrativo())
+        && validLancamento(request.resource.data, 'pagar');
+      allow delete: if isAdmin();
+    }
+    match /usuarios/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create, update, delete: if isAdmin();
+    }
+    match /agendamentos/{id} {
+      allow read: if signedIn();
+      allow create: if validAgendamento(request.resource.data);
+      allow update: if isBackoffice()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'data', 'hora', 'descricao', 'atualizadoEm', 'atualizadoPor']);
+      allow delete: if isAdmin();
+    }
+    match /checklists/{id} {
+      allow read: if signedIn();
+      allow create, update: if (isAdmin() || isTecnico() || isMecanico())
+        && validChecklist(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /auditoria/{id} {
+      allow read: if isAdmin();
+      allow create: if signedIn() && validAudit(request.resource.data);
+      allow update, delete: if false;
+    }
+    match /configuracoes/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Qualquer coleção ou caminho não listado permanece bloqueado.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
