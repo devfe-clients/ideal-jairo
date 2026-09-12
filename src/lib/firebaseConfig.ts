@@ -35,13 +35,14 @@ export function validarFirebaseConfig(): FirebaseOptions {
     return valor;
   };
 
-  return {
+  const config: FirebaseOptions = {
     apiKey: obrigatorio("apiKey"),
     authDomain: obrigatorio("authDomain"),
     projectId: obrigatorio("projectId"),
     storageBucket: obrigatorio("storageBucket"),
     messagingSenderId: obrigatorio("messagingSenderId"),
     appId: obrigatorio("appId"),
-    measurementId: firebaseConfig.measurementId,
   };
+  if (firebaseConfig.measurementId) config.measurementId = firebaseConfig.measurementId;
+  return config;
 }
