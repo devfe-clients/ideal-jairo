@@ -4,6 +4,7 @@ import {
   ArrowRightLeft,
   Camera,
   CheckCircle2,
+  CheckSquare,
   MessageCircle,
   Plus,
   Printer,
@@ -301,6 +302,20 @@ function DetalheOS() {
                 </SelectContent>
               </Select>
             </Campo>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={() => {
+                const todosOk = Object.fromEntries(ITENS_VISTORIA.map((i) => [i, "OK"]));
+                atualizarChecklist(lado, "itens", { ...c.itens, ...todosOk });
+              }}
+            >
+              <CheckSquare className="mr-1 h-3.5 w-3.5" /> Marcar tudo como OK
+            </Button>
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

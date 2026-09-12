@@ -34,7 +34,7 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
   const { dados: veiculos } = useColecao<Veiculo>("veiculos");
   const { usuario } = useAuth();
   const [texto, setTexto] = useState("");
-  const [status, setStatus] = useState("todos");
+  const [status, setStatus] = useState("aberto");
   const [aberto, setAberto] = useState(false);
   const [novoCliente, setNovoCliente] = useState("");
   const [novoVeiculo, setNovoVeiculo] = useState("");
@@ -43,7 +43,11 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
     const t = texto.trim().toLowerCase();
     return ordens
       .filter((o) => o.tipo === tipo)
-      .filter((o) => (status === "todos" ? true : o.status === status))
+      .filter((o) => {
+        if (status === "todos") return true;
+        if (status === "aberto") return o.status !== "Finalizado" && o.status !== "Entregue/Fechado";
+        return o.status === status;
+      })
       .filter((o) => {
         if (!t) return true;
         const c = clientes.find((x) => x.id === o.clienteId);
@@ -64,8 +68,8 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
       return;
     }
     const veiculo = veiculos.find((v) => v.id === novoVeiculo);
-    const nova = novaOrdem(ordens, tipo, novoCliente, novoVeiculo, veiculo?.km ?? 0, usuario.nome);
-    await salvar(nova, usuario.nome);
+    const nova = novaOrdem(ordens, tipo, novoCliente, novoVeiculo, veiculo?.km ?? 0, usuario?.uid ?? "sistema");
+    await salvar(nova, usuario?.uid ?? "sistema");
     toast.success(`${nova.numero} criada.`);
     setAberto(false);
     setNovoCliente("");
@@ -89,6 +93,7 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="aberto">Em aberto</SelectItem>
             <SelectItem value="todos">Todos os status</SelectItem>
             {osStatus.map((s) => (
               <SelectItem key={s} value={s}>

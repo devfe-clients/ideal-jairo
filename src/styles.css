@@ -140,8 +140,16 @@
   body {
     background: var(--paper) !important;
     color: var(--paper-foreground) !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .no-print {
+    display: none !important;
+  }
+  header,
+  aside,
+  nav,
+  .sticky {
     display: none !important;
   }
   .print-sheet {
@@ -149,5 +157,13 @@
     color: var(--paper-foreground) !important;
     box-shadow: none !important;
     border: none !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  @page {
+    margin: 10mm;
+    size: A4;
   }
 }
