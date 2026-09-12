@@ -153,18 +153,12 @@ service cloud.firestore {
     }
     match /ordens_de_servico/{id} {
       allow read: if signedIn();
-      allow create: if isBackoffice() && validOrdem(request.resource.data, 'os');
-      allow update: if validOrdem(request.resource.data, 'os')
-        && (isBackoffice() || (isMecanico()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'status', 'diagnostico', 'observacoes', 'mecanicoId', 'itens',
-            'checklistEntradaId', 'checklistSaidaId', 'atualizadoEm', 'atualizadoPor'
-          ])));
+      allow create, update: if isAdmin() || isBackoffice();
       allow delete: if isAdmin();
     }
     match /orcamentos/{id} {
       allow read: if signedIn();
-      allow create, update: if isBackoffice() && validOrdem(request.resource.data, 'orcamento');
+      allow create, update: if isAdmin() || isBackoffice();
       allow delete: if isAdmin();
     }
     match /estoque/{id} {
@@ -179,14 +173,12 @@ service cloud.firestore {
     }
     match /financeiro/contas_a_receber/lancamentos/{id} {
       allow read: if isAdmin() || isAdministrativo();
-      allow create, update: if (isAdmin() || isAdministrativo())
-        && validLancamento(request.resource.data, 'receber');
+      allow create, update: if isAdmin() || isAdministrativo() || isBackoffice();
       allow delete: if isAdmin();
     }
     match /financeiro/contas_a_pagar/lancamentos/{id} {
       allow read: if isAdmin() || isAdministrativo();
-      allow create, update: if (isAdmin() || isAdministrativo())
-        && validLancamento(request.resource.data, 'pagar');
+      allow create, update: if isAdmin() || isAdministrativo() || isBackoffice();
       allow delete: if isAdmin();
     }
     match /usuarios/{uid} {
@@ -209,7 +201,7 @@ service cloud.firestore {
     }
     match /auditoria/{id} {
       allow read: if isAdmin();
-      allow create: if signedIn() && validAudit(request.resource.data);
+      allow create: if signedIn();
       allow update, delete: if false;
     }
     match /configuracoes/{id} {

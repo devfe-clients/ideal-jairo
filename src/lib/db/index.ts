@@ -33,7 +33,12 @@ export function useColecao<T extends Registro>(colecao: ColecaoNome) {
   const salvar = useCallback(
     async (registro: T, usuario = "sistema") => {
       const existente = dados.some((d) => d.id === registro.id);
-      await db.salvar(colecao, registro);
+      const registroComAutor = {
+        ...registro,
+        criadoPor: (registro as Record<string, unknown>)["criadoPor"] ?? usuario,
+        atualizadoPor: usuario,
+      };
+      await db.salvar(colecao, registroComAutor as T);
       registrarAuditoria({
         colecao,
         registroId: registro.id,

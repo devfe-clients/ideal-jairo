@@ -189,7 +189,7 @@ function DetalheOS() {
       toast.error(erros[0]);
       return false;
     }
-    await salvarOS(os, usuario.nome);
+    await salvarOS(os, usuario?.uid ?? "sistema");
     if (!silencioso) toast.success("Alterações salvas.");
     return true;
   }
@@ -201,20 +201,20 @@ function DetalheOS() {
       status: "Finalizado",
       saida: os.saida || new Date().toISOString().slice(0, 10),
     };
-    // Baixa de estoque apenas das peças próprias da oficina
+    //baixa de estoque apenas das peças próprias da oficina
     for (const item of atualizada.itens) {
       if (item.tipo === "peca" && item.origem === "estoque" && item.pecaId) {
         const peca = pecas.find((p) => p.id === item.pecaId);
         if (peca) {
           await salvarPeca(
             { ...peca, quantidade: Math.max(0, peca.quantidade - item.quantidade) },
-            usuario.nome,
+            usuario?.uid ?? "sistema",
           );
         }
       }
     }
-    await salvarLancamento(contaReceberDaOS(atualizada), usuario.nome);
-    await salvarOS(atualizada, usuario.nome);
+    await salvarLancamento(contaReceberDaOS(atualizada), usuario?.uid ?? "sistema");
+    await salvarOS(atualizada, usuario?.uid ?? "sistema");
     setOS(atualizada);
     toast.success("OS finalizada: conta a receber criada e estoque baixado automaticamente.");
   }
@@ -229,7 +229,7 @@ function DetalheOS() {
       aprovacao: destino === "os" ? "Aprovado" : os.aprovacao,
       itens: destino === "os" ? os.itens.filter((i) => i.aprovado) : os.itens,
     };
-    await salvarOS(convertida, usuario.nome);
+    await salvarOS(convertida, usuario?.uid ?? "sistema");
     setOS(convertida);
     toast.success(
       destino === "os"
