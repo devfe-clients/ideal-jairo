@@ -142,7 +142,8 @@ service cloud.firestore {
     }
 
     match /clientes/{id} {
-      allow read, create, update: if isBackoffice() && validCliente(request.resource.data);
+      allow read: if isBackoffice();
+      allow create, update: if isBackoffice() && validCliente(request.resource.data);
       allow delete: if isAdmin();
     }
     match /veiculos/{id} {
@@ -152,7 +153,13 @@ service cloud.firestore {
     }
     match /ordens_de_servico/{id} {
       allow read: if signedIn();
-      allow create, update: if signedIn() && validOrdem(request.resource.data, 'os');
+      allow create: if isBackoffice() && validOrdem(request.resource.data, 'os');
+      allow update: if validOrdem(request.resource.data, 'os')
+        && (isBackoffice() || (isMecanico()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'diagnostico', 'observacoes', 'mecanicoId', 'itens',
+            'checklistEntradaId', 'checklistSaidaId', 'atualizadoEm', 'atualizadoPor'
+          ])));
       allow delete: if isAdmin();
     }
     match /orcamentos/{id} {
@@ -166,16 +173,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     match /compras/{id} {
-      allow read, create, update: if (isAdmin() || isTecnico()) && validCompra(request.resource.data);
+      allow read: if isAdmin() || isTecnico();
+      allow create, update: if (isAdmin() || isTecnico()) && validCompra(request.resource.data);
       allow delete: if isAdmin();
     }
     match /financeiro/contas_a_receber/lancamentos/{id} {
-      allow read, create, update: if (isAdmin() || isAdministrativo())
+      allow read: if isAdmin() || isAdministrativo();
+      allow create, update: if (isAdmin() || isAdministrativo())
         && validLancamento(request.resource.data, 'receber');
       allow delete: if isAdmin();
     }
     match /financeiro/contas_a_pagar/lancamentos/{id} {
-      allow read, create, update: if (isAdmin() || isAdministrativo())
+      allow read: if isAdmin() || isAdministrativo();
+      allow create, update: if (isAdmin() || isAdministrativo())
         && validLancamento(request.resource.data, 'pagar');
       allow delete: if isAdmin();
     }
