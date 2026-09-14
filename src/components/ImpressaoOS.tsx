@@ -1,12 +1,8 @@
-import logo from "@/assets/logo.jpg.asset.json";
+const logo = { url: "/logo-ideal-jairo.jpg" };
 import { EMPRESA } from "@/lib/empresa";
 import { brl, dataBR, formatarDoc, formatarTelefone, itemTotal, totaisOS } from "@/lib/calc";
 import type { Checklist, Cliente, OrdemServico, Usuario, Veiculo } from "@/lib/schemas";
 
-/**
- * Documento impresso da OS. Regra do projeto: nada de espaços em branco —
- * cada bloco só aparece quando existe conteúdo real.
- */
 export function ImpressaoOS({
   os,
   cliente,

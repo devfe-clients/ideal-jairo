@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import logo from "@/assets/logo.jpg.asset.json";
+const logo = { url: "/logo-ideal-jairo.jpg" };
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";

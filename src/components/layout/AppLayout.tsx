@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   LogOut,
 } from "lucide-react";
-import logo from "@/assets/logo.jpg.asset.json";
+const logo = { url: "/logo-ideal-jairo.jpg" };
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { modoBanco } from "@/lib/db";
