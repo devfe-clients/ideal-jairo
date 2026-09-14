@@ -235,7 +235,7 @@ export const agendamentoSchema = z.object({
   placa: placaSchema,
   marca: z.string().trim().min(1, "Informe a marca").max(40),
   modelo: z.string().trim().min(1, "Informe o modelo").max(80),
-  ano: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
+  ano: z.coerce.number().int().min(1900).max(new Date().getFullYear()),
   km: z.coerce.number().int().min(0).default(0),
   servico: z.string().trim().min(2, "Selecione o serviço").max(120),
   descricao: z.string().trim().max(1000).optional().or(z.literal("")),
