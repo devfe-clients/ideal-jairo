@@ -162,13 +162,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     match /estoque/{id} {
-      allow read: if isAdmin() || isTecnico();
-      allow create, update: if (isAdmin() || isTecnico()) && validEstoque(request.resource.data);
+      allow read: if isAdmin() || isTecnico() || isBackoffice();
+      allow create, update: if isAdmin() || isTecnico() || isBackoffice();
       allow delete: if isAdmin();
     }
     match /compras/{id} {
-      allow read: if isAdmin() || isTecnico();
-      allow create, update: if (isAdmin() || isTecnico()) && validCompra(request.resource.data);
+      allow read: if isAdmin() || isTecnico() || isBackoffice();
+      allow create, update: if isAdmin() || isTecnico() || isBackoffice();
       allow delete: if isAdmin();
     }
     match /financeiro/contas_a_receber/lancamentos/{id} {
