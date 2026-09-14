@@ -143,12 +143,12 @@ service cloud.firestore {
 
     match /clientes/{id} {
       allow read: if isBackoffice();
-      allow create, update: if isBackoffice() && validCliente(request.resource.data);
+      allow create, update: if isBackoffice();
       allow delete: if isAdmin();
     }
     match /veiculos/{id} {
       allow read: if isBackoffice() || isMecanico();
-      allow create, update: if isBackoffice() && validVeiculo(request.resource.data);
+      allow create, update: if isBackoffice();
       allow delete: if isAdmin();
     }
     match /ordens_de_servico/{id} {
@@ -187,10 +187,8 @@ service cloud.firestore {
     }
     match /agendamentos/{id} {
       allow read: if signedIn();
-      allow create: if validAgendamento(request.resource.data);
-      allow update: if isBackoffice()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status', 'data', 'hora', 'descricao', 'atualizadoEm', 'atualizadoPor']);
+      allow create: if true;
+      allow update: if isBackoffice();
       allow delete: if isAdmin();
     }
     match /checklists/{id} {

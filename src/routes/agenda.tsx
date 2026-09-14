@@ -60,7 +60,7 @@ function AgendaPage() {
   );
 
   async function mudarStatus(a: Agendamento, novo: Agendamento["status"]) {
-    await salvar({ ...a, status: novo }, usuario.nome);
+    await salvar({ ...a, status: novo }, usuario?.uid ?? "sistema");
     toast.success(`Agendamento ${novo.toLowerCase()}.`);
   }
 
@@ -84,7 +84,7 @@ function AgendaPage() {
         consentimentoLgpd: a.consentimentoLgpd,
         criadoEm: new Date().toISOString(),
       } as Cliente;
-      await salvarCliente(cliente, usuario.nome);
+      await salvarCliente(cliente, usuario?.uid ?? "sistema");
     }
 
     if (!veiculo) {
@@ -103,14 +103,14 @@ function AgendaPage() {
         observacoes: "",
         criadoEm: new Date().toISOString(),
       } as Veiculo;
-      await salvarVeiculo(veiculo, usuario.nome);
+      await salvarVeiculo(veiculo, usuario?.uid ?? "sistema");
     }
 
-    const os = novaOrdem(ordens, "os", cliente.id, veiculo.id, a.km, usuario.nome);
+    const os = novaOrdem(ordens, "os", cliente.id, veiculo.id, a.km, usuario?.uid ?? "sistema");
     os.reclamacao = `${a.servico}${a.descricao ? ` — ${a.descricao}` : ""}`;
     os.status = "Aguardando atendimento";
-    await salvarOS(os, usuario.nome);
-    await salvar({ ...a, status: "Convertido" }, usuario.nome);
+    await salvarOS(os, usuario?.uid ?? "sistema");
+    await salvar({ ...a, status: "Convertido" }, usuario?.uid ?? "sistema");
     toast.success(`OS ${os.numero} criada a partir do agendamento.`);
     void navigate({ to: "/os/$id", params: { id: os.id } });
   }
