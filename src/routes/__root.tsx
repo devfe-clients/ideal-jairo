@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "../lib/auth";
@@ -115,6 +116,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function AuthGuard() {
   const { usuario, carregando } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Rotas públicas — não exigem login interno
+  if (pathname.startsWith("/agendar")) {
+    return <Outlet />;
+  }
+
   if (carregando) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">

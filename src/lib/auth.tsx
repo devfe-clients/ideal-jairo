@@ -84,12 +84,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Busca os custom claims (perfil e ativo)
+      //busca os custom claims (perfil e ativo)
       const token = await user.getIdTokenResult(true);
       const claims = token.claims as Record<string, unknown>;
 
       if (!claims["ativo"]) {
-        // Usuário sem permissão — desloga imediatamente
+        if (typeof window !== "undefined" && window.location.pathname.startsWith("/agendar")) {
+          setUsuario(null);
+          setCarregando(false);
+          return;
+        }
+        //usuário sem permissão no sistema interno — desloga
         await signOut(auth!);
         setUsuario(null);
         setCarregando(false);
