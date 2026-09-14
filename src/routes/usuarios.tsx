@@ -93,7 +93,7 @@ function UsuariosPage() {
       toast.error("Corrija os campos destacados.");
       return;
     }
-    await salvar({ ...dados, id: editando?.id ?? novoId() }, usuario.nome);
+    await salvar({ ...dados, id: editando?.id ?? novoId() }, usuario?.uid ?? "sistema");
     setAberto(false);
     toast.success(editando ? "Usuário atualizado." : "Usuário criado.");
   }
@@ -154,7 +154,7 @@ function UsuariosPage() {
       toast.error("Selecione o cliente.");
       return;
     }
-    await removerCliente(cliente.id, usuario.nome);
+    await removerCliente(cliente.id, usuario?.uid ?? "sistema");
     toast.success(
       "Cliente removido. Os documentos fiscais permanecem arquivados pelo prazo legal, sem dados pessoais.",
     );
@@ -204,7 +204,7 @@ function UsuariosPage() {
                       variant="ghost"
                       className="text-destructive"
                       onClick={() => {
-                        void remover(u.id, usuario.nome);
+                        void remover(u.id, usuario?.uid ?? "sistema");
                         toast.success("Usuário removido.");
                       }}
                     >
