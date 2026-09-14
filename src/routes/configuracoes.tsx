@@ -191,7 +191,7 @@ function ConfiguracoesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Database className="h-4 w-4 text-primary" /> Banco de dados
+                <Database className="h-4 w-4 text-primary" /> Banco de dados / anotações
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
@@ -200,8 +200,7 @@ function ConfiguracoesPage() {
                 <Badge variant="secondary">{modoBanco}</Badge>
               </div>
               <p className="text-muted-foreground">
-                O frontend está pronto para receber as chaves do Firebase. Até lá, os dados de
-                demonstração ficam somente neste navegador.
+backend em desenvolvimento final, faltando dashboard, cadastro de funcionários e storange/imagens.
               </p>
             </CardContent>
           </Card>
@@ -209,7 +208,7 @@ function ConfiguracoesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="h-4 w-4 text-primary" /> Segurança
+                <ShieldCheck className="h-4 w-4 text-primary" /> Segurança / anotações
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
@@ -222,12 +221,11 @@ function ConfiguracoesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Server className="h-4 w-4 text-primary" /> Publicação
+                <Server className="h-4 w-4 text-primary" /> Publicação / anotações
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Destino previsto: Vercel.</p>
-              <p>Firebase e armazenamento de fotos ainda aguardam as chaves do projeto.</p>
+              <p>previsto: 25/09/2026 a 28/09/2026.</p>
             </CardContent>
           </Card>
         </div>
