@@ -200,8 +200,7 @@ function ConfiguracoesPage() {
                 <Badge variant="secondary">{modoBanco}</Badge>
               </div>
               <p className="text-muted-foreground">
-backend em desenvolvimento final, faltando dashboard, cadastro de funcionários e storange/imagens.
-              </p>
+Firebase (banco) / Cloudfire R2 (Storange)              </p>
             </CardContent>
           </Card>
 
@@ -221,11 +220,11 @@ backend em desenvolvimento final, faltando dashboard, cadastro de funcionários 
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Server className="h-4 w-4 text-primary" /> Publicação / anotações
+                <Server className="h-4 w-4 text-primary" /> Publicação
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>previsto: 25/09/2026 a 28/09/2026.</p>
+              <p>©2026 Ideal Jairo - Oficina.</p>
             </CardContent>
           </Card>
         </div>
