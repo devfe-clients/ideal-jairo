@@ -1,24 +1,31 @@
 /**
- * ESTRATÉGIA DE FOTOS (custo alvo: R$ 0 a R$ 5/mês)
+ * ESTRATÉGIA DE FOTOS — Cloudflare R2
  *
- * 1. Toda foto é comprimida no navegador ANTES de subir:
- *    - redimensionada para no máx. 1280px no maior lado
- *    - convertida para WebP com qualidade 0,72
- *    - resultado típico: 90 KB a 160 KB por foto (vs. 3-5 MB da câmera)
- *    Com 15 fotos por OS e 120 OS/mês => ~200 MB/mês.
+ * Fluxo:
+ * 1.foto é comprimida no browser (WebP, ~120 KB)
+ * 2.browser pede URL pré-assinada ao servidor (server function)
+ * 3.browser faz PUT direto para o R2 com a URL pré-assinada
+ * 4.url pública da foto é salva no Firestore (nunca o binário)
  *
- * 2. Onde guardar (decidir na sessão 2):
- *    a) Cloudflare R2 — 10 GB grátis, SEM cobrança de saída. Recomendado: custo R$ 0.
- *    b) Firebase Storage — 5 GB grátis no Spark; no Blaze ~US$ 0,026/GB.
- *    c) Cloudinary Free — 25 créditos/mês, otimização automática.
- *    O Firestore guarda apenas a URL da foto, nunca o binário.
- *
- * Enquanto o storage não está conectado, a foto comprimida fica como dataURL
- * local (apenas para demonstração das telas).
+ *custo estimado para 4.500 fotos/mês (~540 MB): R$ 0 (dentro do plano gratuito).
  */
+
+import { gerarUrlUpload } from "./r2.server";
 
 export const MAX_FOTOS = 15;
 
+const ACCOUNT_ID = import.meta.env["VITE_R2_ACCOUNT_ID"] ?? "";
+const PUBLIC_URL = import.meta.env["VITE_R2_PUBLIC_URL"] ?? "";
+
+/** URL pública de uma foto armazenada no R2 */
+function urlPublica(chave: string): string {
+  return `${PUBLIC_URL}/${chave}`;
+}
+
+/**
+ *comprime a foto no browser antes de subir.
+ *resultado típico: 90–160 KB por foto.
+ */
 export async function comprimirFoto(file: File, maxLado = 1280, qualidade = 0.72) {
   const bitmap = await createImageBitmap(file);
   const escala = Math.min(1, maxLado / Math.max(bitmap.width, bitmap.height));
@@ -39,8 +46,41 @@ export async function comprimirFoto(file: File, maxLado = 1280, qualidade = 0.72
   return { blob, tamanhoKb: Math.round(blob.size / 1024) };
 }
 
-export function blobParaDataUrl(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
+/**
+ * Faz upload da foto comprimida para o R2 e retorna a URL pública.
+ * Se o R2 não estiver configurado, retorna dataURL local (fallback).
+ */
+export async function uploadFoto(
+  blob: Blob,
+  osId: string,
+  index: number,
+): Promise<string> {
+  // Fallback: sem credenciais R2, salva como dataURL local
+  if (!ACCOUNT_ID) {
+    return blobParaDataUrl(blob);
+  }
+
+  try {
+    const chave = `os/${osId}/${Date.now()}-${index}.webp`;
+    const { url } = await gerarUrlUpload({ data: { chave, tipo: "image/webp" } });
+
+    const res = await fetch(url, {
+      method: "PUT",
+      body: blob,
+      headers: { "Content-Type": "image/webp" },
+    });
+
+    if (!res.ok) throw new Error(`Upload falhou: ${res.status}`);
+
+    return urlPublica(chave);
+  } catch (err) {
+    console.error("Erro no upload R2, usando fallback local:", err);
+    return blobParaDataUrl(blob);
+  }
+}
+
+export function blobParaDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(new Error("Falha ao ler imagem"));

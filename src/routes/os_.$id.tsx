@@ -46,7 +46,7 @@ import {
 import { brl, linkWhatsApp, itemTotal, totaisOS } from "@/lib/calc";
 import { contaReceberDaOS, mensagemOrcamento, mensagemPronto, proximoNumero } from "@/lib/os-helpers";
 import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL } from "@/lib/empresa";
-import { MAX_FOTOS, blobParaDataUrl, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
+import { MAX_FOTOS, uploadFoto, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/os_/$id")({
@@ -255,8 +255,9 @@ function DetalheOS() {
         continue;
       }
       const { blob, tamanhoKb } = await comprimirFoto(file);
-      novas.push(await blobParaDataUrl(blob));
-      toast.success(`${file.name} otimizada para ${tamanhoKb} KB`);
+      const url = await uploadFoto(blob, os.id, novas.length + atual.fotos.length);
+      novas.push(url);
+      toast.success(`${file.name} enviada (${tamanhoKb} KB)`);
     }
     atualizar(lado, { ...atual, fotos: [...atual.fotos, ...novas] });
   }
@@ -500,6 +501,11 @@ function DetalheOS() {
                 type="number"
                 valor={String(os.km)}
                 onChange={(v) => atualizar("km", Number(v) || 0)}
+              />
+              <CampoTexto
+                label="Cor do veículo"
+                valor={String((os as Record<string, unknown>)["corVeiculo"] ?? veiculo?.cor ?? "")}
+                onChange={(v) => atualizar("corVeiculo" as keyof OrdemServico, v)}
               />
               <CampoTexto
                 label="Garantia (dias)"

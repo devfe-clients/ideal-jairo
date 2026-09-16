@@ -19,15 +19,15 @@ const auth = getAuth();
 const db = getFirestore();
 
 /**
- * EDITE AQUI — adicione quantos usuários precisar.
+ * adicione quantos usuários precisar.
  * 
  * perfil: "admin" | "tecnico" | "administrativo" | "mecanico"
  */
 const USUARIOS = [
   {
-    nome: "Nome do Mecânico",
-    email: "mecanico@email.com.br",
-    senha: "senha123",        // mínimo 6 caracteres
+    nome: "Norton Goli",
+    email: "nortongoli40@gmail.com",
+    senha: "9.fWqqv1z@",
     perfil: "mecanico",
     perfilExibicao: "Mecânico",
   },

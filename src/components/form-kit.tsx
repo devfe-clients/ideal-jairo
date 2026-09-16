@@ -127,6 +127,7 @@ export function CampoArea({
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={Boolean(erro)}
+        className="resize-none"
       />
     </Campo>
   );
