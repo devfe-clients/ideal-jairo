@@ -118,10 +118,14 @@ function AuthGuard() {
   const { usuario, carregando } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  // Rotas públicas — não exigem login interno
-  if (pathname.startsWith("/agendar")) {
-    return <Outlet />;
-  }
+  //rotas públicas
+if (
+  pathname.startsWith("/agendar") ||
+  pathname.startsWith("/privacidade") ||
+  pathname.startsWith("/termos")
+) {
+  return <Outlet />;
+}
 
   if (carregando) {
     return (

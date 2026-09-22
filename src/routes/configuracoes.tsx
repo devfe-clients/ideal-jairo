@@ -178,9 +178,24 @@ function ConfiguracoesPage() {
                 </span>
                 <textarea
                   rows={4}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                   value={bloqueiosTexto}
                   onChange={(e) => setBloqueiosTexto(e.target.value)}
+                />
+              </label>
+
+              <label className="block space-y-1.5">
+                <span className="text-xs uppercase text-muted-foreground">
+                  Datas especiais — serviços específicos (AAAA-MM-DD: Descrição, uma por linha)
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Ex: 2026-10-15: Aparece como aviso no agendamento nessa data.
+                </p>
+                <textarea
+                  rows={4}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  value={(config as Record<string, unknown>)["datasEspeciaisTexto"] as string ?? ""}
+                  onChange={(e) => setConfig({ ...config, datasEspeciaisTexto: e.target.value } as ConfigRegistro)}
                 />
               </label>
             </CardContent>

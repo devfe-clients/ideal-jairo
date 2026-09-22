@@ -62,7 +62,7 @@ export const placaSchema = z
 export const clienteSchema = z.object({
   id: z.string().optional(),
   nome: z.string().trim().min(3, "Informe o nome completo").max(120),
-  cpfCnpj: cpfCnpjSchema,
+  cpfCnpj: cpfCnpjSchema.optional().or(z.literal("")),
   telefone: phoneSchema,
   email: z.string().trim().email("E-mail inválido").max(160).optional().or(z.literal("")),
   cep: z.string().trim().max(9).optional().or(z.literal("")),
@@ -228,7 +228,7 @@ export type Lancamento = z.infer<typeof lancamentoSchema> & { id: string };
 export const agendamentoSchema = z.object({
   id: z.string().optional(),
   nome: z.string().trim().min(3, "Informe o nome completo").max(120),
-  cpfCnpj: cpfCnpjSchema,
+  cpfCnpj: cpfCnpjSchema.optional().or(z.literal("")),
   telefone: phoneSchema,
   email: z.string().trim().email("E-mail inválido").optional().or(z.literal("")),
   endereco: z.string().trim().max(180).optional().or(z.literal("")),

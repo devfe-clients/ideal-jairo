@@ -70,7 +70,7 @@ function Clientes() {
       (c) =>
         c.nome.toLowerCase().includes(t) ||
         (d && soDigitos(c.telefone).includes(d)) ||
-        (d && soDigitos(c.cpfCnpj).includes(d)) ||
+        (d && c.cpfCnpj && soDigitos(c.cpfCnpj).includes(d)) ||
         veiculos.some((v) => v.clienteId === c.id && v.placa.toLowerCase().includes(t)),
     );
   }, [busca, clientes, veiculos]);
@@ -135,7 +135,7 @@ function Clientes() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{c.nome}</p>
-                      <p className="text-xs text-muted-foreground">{formatarDoc(c.cpfCnpj)}</p>
+                      <p className="text-xs text-muted-foreground">{formatarDoc(c.cpfCnpj ?? "")}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatarTelefone(c.telefone)}
                       </p>
@@ -219,7 +219,7 @@ function Clientes() {
               onChange={(v) => form.set("nome", v)}
             />
             <CampoTexto
-              label="CPF / CNPJ"
+              label="CPF / CNPJ (opcional)"
               valor={formatarDoc(String(form.valores["cpfCnpj"] ?? ""))}
               erro={form.erros["cpfCnpj"]}
               onChange={(v) => form.set("cpfCnpj", v)}

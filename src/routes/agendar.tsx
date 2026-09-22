@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock, LogOut, Plus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -248,7 +248,7 @@ function AgendarPublico() {
         <CampoTexto label="Nome completo" className="sm:col-span-2"
           valor={String(form.valores["nome"] ?? "")} erro={form.erros["nome"]}
           onChange={(v) => form.set("nome", v)} />
-        <CampoTexto label="CPF / CNPJ"
+        <CampoTexto label="CPF / CNPJ (opcional)"
           valor={formatarDoc(String(form.valores["cpfCnpj"] ?? ""))} erro={form.erros["cpfCnpj"]}
           onChange={(v) => form.set("cpfCnpj", v)} />
         <CampoTexto label="Telefone / WhatsApp"
@@ -394,6 +394,15 @@ function AgendarPublico() {
           </div>
         )}
       </main>
+      <footer className="border-t border-border mt-6">
+        <div className="mx-auto max-w-3xl px-4 py-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span>© {new Date().getFullYear()} Oficina Ideal Jairo</span>
+          <div className="flex gap-4">
+            <Link to="/privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
+            <Link to="/termos" className="hover:text-foreground transition-colors">Termos de uso</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -31,6 +31,13 @@ const USUARIOS = [
     perfil: "mecanico",
     perfilExibicao: "Mecânico",
   },
+  {
+    nome: "Jairo Alves de Oliveira",
+    email: "oficinaidealjairo@gmail.com",
+    senha: "iv5a.0%Sq",
+    perfil: "admin",
+    perfilExibicao: "Administrador",
+  },
   // {
   //   nome: "Outro Funcionário",
   //   email: "outro@email.com.br",

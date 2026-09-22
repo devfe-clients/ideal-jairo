@@ -19,7 +19,9 @@ import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OsRouteImport } from './routes/os'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
 import { Route as OsIdRouteImport } from './routes/os_.$id'
@@ -74,9 +76,19 @@ const OsRoute = OsRouteImport.update({
   path: '/os',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RelatoriosRoute = RelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsuariosRoute = UsuariosRouteImport.update({
@@ -106,7 +118,9 @@ export interface FileRoutesByFullPath {
   '/financeiro': typeof FinanceiroRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/relatorios': typeof RelatoriosRoute
+  '/termos': typeof TermosRoute
   '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
   '/os/$id': typeof OsIdRoute
@@ -122,7 +136,9 @@ export interface FileRoutesByTo {
   '/financeiro': typeof FinanceiroRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/relatorios': typeof RelatoriosRoute
+  '/termos': typeof TermosRoute
   '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
   '/os/$id': typeof OsIdRoute
@@ -139,7 +155,9 @@ export interface FileRoutesById {
   '/financeiro': typeof FinanceiroRoute
   '/orcamentos': typeof OrcamentosRoute
   '/os': typeof OsRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/relatorios': typeof RelatoriosRoute
+  '/termos': typeof TermosRoute
   '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
   '/os_/$id': typeof OsIdRoute
@@ -157,7 +175,9 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/orcamentos'
     | '/os'
+    | '/privacidade'
     | '/relatorios'
+    | '/termos'
     | '/usuarios'
     | '/veiculos'
     | '/os/$id'
@@ -173,7 +193,9 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/orcamentos'
     | '/os'
+    | '/privacidade'
     | '/relatorios'
+    | '/termos'
     | '/usuarios'
     | '/veiculos'
     | '/os/$id'
@@ -189,7 +211,9 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/orcamentos'
     | '/os'
+    | '/privacidade'
     | '/relatorios'
+    | '/termos'
     | '/usuarios'
     | '/veiculos'
     | '/os_/$id'
@@ -206,7 +230,9 @@ export interface RootRouteChildren {
   FinanceiroRoute: typeof FinanceiroRoute
   OrcamentosRoute: typeof OrcamentosRoute
   OsRoute: typeof OsRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   RelatoriosRoute: typeof RelatoriosRoute
+  TermosRoute: typeof TermosRoute
   UsuariosRoute: typeof UsuariosRoute
   VeiculosRoute: typeof VeiculosRoute
   OsIdRoute: typeof OsIdRoute
@@ -284,11 +310,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relatorios': {
       id: '/relatorios'
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/usuarios': {
@@ -326,7 +366,9 @@ const rootRouteChildren: RootRouteChildren = {
   FinanceiroRoute: FinanceiroRoute,
   OrcamentosRoute: OrcamentosRoute,
   OsRoute: OsRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   RelatoriosRoute: RelatoriosRoute,
+  TermosRoute: TermosRoute,
   UsuariosRoute: UsuariosRoute,
   VeiculosRoute: VeiculosRoute,
   OsIdRoute: OsIdRoute,
