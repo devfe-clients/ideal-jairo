@@ -83,7 +83,7 @@ function DetalheOS() {
   const { dados: usuarios } = useColecao<Usuario>("usuarios");
   const { dados: pecas, salvar: salvarPeca } = useColecao<Peca>("pecas");
   const { dados: servicos } = useColecao<ServicoBase>("servicos");
-  const { salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
+  const { dados: lancamentos, salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
 
   const original = ordens.find((o) => o.id === id);
   const [osState, setOS] = useState<OrdemServico | null>(null);
@@ -191,6 +191,22 @@ function DetalheOS() {
       return false;
     }
     await salvarOS(os, usuario?.uid ?? "sistema");
+
+    //OS já está finalizada, atualiza o lançamento vinculado
+    if (os.status === "Finalizado" || os.status === "Entregue/Fechado") {
+      const lancamentoVinculado = lancamentos.find((l) => l.osId === os.id);
+      if (lancamentoVinculado) {
+        const novoValor = totaisOS(os, true).total;
+        if (lancamentoVinculado.valor !== novoValor) {
+          await salvarLancamento(
+            { ...lancamentoVinculado, valor: novoValor },
+            usuario?.uid ?? "sistema",
+          );
+          if (!silencioso) toast.info("Conta a receber atualizada automaticamente.");
+        }
+      }
+    }
+
     if (!silencioso) toast.success("Alterações salvas.");
     return true;
   }

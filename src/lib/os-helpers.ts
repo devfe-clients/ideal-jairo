@@ -96,7 +96,7 @@ export function dadosDoAgendamento(
 ) {
   const cliente = clientes.find(
     (c) =>
-      c.cpfCnpj.replace(/\D/g, "") === agendamento.cpfCnpj.replace(/\D/g, "") ||
+              (c.cpfCnpj ?? "").replace(/\D/g, "") === (agendamento.cpfCnpj ?? "").replace(/\D/g, "") ||
       c.telefone.replace(/\D/g, "") === agendamento.telefone.replace(/\D/g, ""),
   );
   const veiculo = veiculos.find((v) => v.placa === agendamento.placa);
