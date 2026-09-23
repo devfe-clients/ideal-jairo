@@ -87,6 +87,50 @@ function DetalheOS() {
 
   const original = ordens.find((o) => o.id === id);
   const [osState, setOS] = useState<OrdemServico | null>(null);
+const [modalPeca, setModalPeca] = useState<{
+  itemId: string;
+  nome: string;
+  custo: string;
+  venda: string;
+} | null>(null);
+
+async function criarPecaNoEstoque() {
+  if (!modalPeca) return;
+  const nova: Peca = {
+    id: novoId(),
+    nome: modalPeca.nome,
+    codigo: "",
+    marca: "",
+    fornecedor: "",
+    custo: Number(modalPeca.custo) || 0,
+    precoVenda: Number(modalPeca.venda) || 0,
+    quantidade: 0,
+    estoqueMinimo: 1,
+    localizacao: "",
+    observacoes: "Criada automaticamente via OS.",
+  };
+  await salvarPeca(nova, usuario?.uid ?? "sistema");
+  setOS((a) =>
+    a
+      ? {
+          ...a,
+          itens: a.itens.map((i) =>
+            i.id === modalPeca.itemId
+              ? {
+                  ...i,
+                  descricao: nova.nome,
+                  valorUnitario: nova.precoVenda,
+                  custoUnitario: nova.custo,
+                  pecaId: nova.id,
+                }
+              : i,
+          ),
+        }
+      : a,
+  );
+  toast.success(`Peça "${nova.nome}" criada no estoque.`);
+  setModalPeca(null);
+}
 
   useEffect(() => {
     if (original && !osState) setOS(structuredClone(original));
@@ -624,12 +668,23 @@ function DetalheOS() {
                     </Button>
                   </div>
 
-                  <CampoTexto
-                    label="Descrição"
-                    className="sm:col-span-2"
-                    valor={i.descricao}
-                    onChange={(v) => atualizarItem(i.id, "descricao", v)}
-                  />
+<CampoTexto
+  label="Descrição"
+  className="sm:col-span-2"
+  valor={i.descricao}
+  onChange={(v) => atualizarItem(i.id, "descricao", v)}
+  onBlur={() => {
+    if (i.tipo !== "peca") return;
+    if (!i.descricao.trim()) return;
+    if (i.pecaId) return; 
+    const existe = pecas.some(
+      (p) => p.nome.toLowerCase() === i.descricao.toLowerCase(),
+    );
+    if (!existe) {
+      setModalPeca({ itemId: i.id, nome: i.descricao, custo: "", venda: "" });
+    }
+  }}
+/>
                   <CampoTexto
                     label="Qtd"
                     type="number"
@@ -770,6 +825,42 @@ function DetalheOS() {
       <div className="hidden print:block">
         <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} />
       </div>
+
+      {modalPeca ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-xl space-y-4">
+            <p className="font-semibold text-base">Peça não encontrada no estoque</p>
+            <p className="text-sm text-muted-foreground">
+              Cadastre agora e ela será criada automaticamente.
+            </p>
+            <CampoTexto
+              label="Nome da peça"
+              valor={modalPeca.nome}
+              onChange={(v) => setModalPeca((m) => m ? { ...m, nome: v } : m)}
+            />
+            <CampoTexto
+              label="Valor de custo (R$)"
+              type="number"
+              valor={modalPeca.custo}
+              onChange={(v) => setModalPeca((m) => m ? { ...m, custo: v } : m)}
+            />
+            <CampoTexto
+              label="Valor de venda (R$)"
+              type="number"
+              valor={modalPeca.venda}
+              onChange={(v) => setModalPeca((m) => m ? { ...m, venda: v } : m)}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setModalPeca(null)}>
+                Ignorar
+              </Button>
+              <Button onClick={() => void criarPecaNoEstoque()}>
+                Criar no estoque
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppLayout>
   );
 }

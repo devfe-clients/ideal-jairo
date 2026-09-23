@@ -71,6 +71,7 @@ export function CampoTexto({
   label,
   valor,
   onChange,
+  onBlur,
   erro,
   placeholder,
   type = "text",
@@ -81,6 +82,7 @@ export function CampoTexto({
   label: string;
   valor: string | number;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   erro?: string | undefined;
   placeholder?: string | undefined;
   type?: string;
@@ -96,6 +98,7 @@ export function CampoTexto({
         placeholder={placeholder}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         aria-invalid={Boolean(erro)}
       />
     </Campo>
