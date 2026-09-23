@@ -843,6 +843,15 @@ async function criarPecaNoEstoque() {
               type="number"
               valor={modalPeca.custo}
               onChange={(v) => setModalPeca((m) => m ? { ...m, custo: v } : m)}
+              onBlur={() =>
+                setModalPeca((m) => {
+                  if (!m) return m;
+                  if (m.venda) return m;
+                  const custo = Number(m.custo) || 0;
+                  if (!custo) return m;
+                  return { ...m, venda: (custo * 1.6).toFixed(2) };
+                })
+              }
             />
             <CampoTexto
               label="Valor de venda (R$)"
@@ -850,6 +859,52 @@ async function criarPecaNoEstoque() {
               valor={modalPeca.venda}
               onChange={(v) => setModalPeca((m) => m ? { ...m, venda: v } : m)}
             />
+            {(() => {
+              const custo = Number(modalPeca.custo) || 0;
+              const venda = Number(modalPeca.venda) || 0;
+              const lucro = venda - custo;
+              const margem = custo > 0 ? (lucro / custo) * 100 : 0;
+              const qualidade =
+                margem >= 60
+                  ? { label: "▲ Boa", cor: "text-success" }
+                  : margem >= 30
+                  ? { label: "▶ Razoável", cor: "text-warning" }
+                  : { label: "▼ Baixa", cor: "text-destructive" };
+              return (
+                <>
+                  {custo > 0 ? (
+                    <div className="flex gap-2">
+                      {[40, 60, 80].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          className="flex-1 rounded-md border border-border bg-muted py-1 text-xs hover:border-primary"
+                          onClick={() =>
+                            setModalPeca((m) =>
+                              m
+                                ? { ...m, venda: (custo * (1 + pct / 100)).toFixed(2) }
+                                : m,
+                            )
+                          }
+                        >
+                          +{pct}%
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {(venda > 0 || custo > 0) ? (
+                    <div className="rounded-md bg-muted px-3 py-2 text-sm space-y-0.5">
+                      <p className="text-muted-foreground">
+                        Lucro bruto: <strong>{brl(lucro)}</strong>
+                      </p>
+                      <p className={qualidade.cor}>
+                        Margem: <strong>{margem.toFixed(0)}%</strong> {qualidade.label}
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setModalPeca(null)}>
                 Ignorar
