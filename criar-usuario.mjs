@@ -33,10 +33,10 @@ const USUARIOS = [
   },
   {
     nome: "Jairo Alves de Oliveira",
-    email: "oficinaidealjairo@gmail.com",
+    email: "mecanico.jairo@gmail.com",
     senha: "iv5a.0%Sq",
-    perfil: "admin",
-    perfilExibicao: "Administrador",
+    perfil: "mecanico",
+    perfilExibicao: "Mecânico",
   },
   // {
   //   nome: "Outro Funcionário",

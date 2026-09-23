@@ -20,6 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Campo, Vazio } from "@/components/form-kit";
 import { useColecao } from "@/lib/db";
 import type { Cliente, OrdemServico, Veiculo } from "@/lib/schemas";
@@ -38,6 +52,8 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
   const [aberto, setAberto] = useState(false);
   const [novoCliente, setNovoCliente] = useState("");
   const [novoVeiculo, setNovoVeiculo] = useState("");
+const [buscaCliente, setBuscaCliente] = useState("");
+const [comboAberto, setComboAberto] = useState(false);
 
   const lista = useMemo(() => {
     const t = texto.trim().toLowerCase();
@@ -163,24 +179,56 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
           </DialogHeader>
           <div className="space-y-4">
             <Campo label="Cliente">
-              <Select
-                value={novoCliente}
-                onValueChange={(v) => {
-                  setNovoCliente(v);
-                  setNovoVeiculo("");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={comboAberto} onOpenChange={setComboAberto}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                  >
+                    {novoCliente
+                      ? clientes.find((c) => c.id === novoCliente)?.nome
+                      : "Selecione o cliente"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Buscar cliente..."
+                      value={buscaCliente}
+                      onValueChange={setBuscaCliente}
+                    />
+                    <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                    <CommandGroup className="max-h-60 overflow-y-auto">
+                      {clientes
+                        .filter((c) =>
+                          c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
+                        )
+                        .map((c) => (
+                          <CommandItem
+                            key={c.id}
+                            value={c.nome}
+                            onSelect={() => {
+                              setNovoCliente(c.id);
+                              setNovoVeiculo("");
+                              setBuscaCliente("");
+                              setComboAberto(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                novoCliente === c.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {c.nome}
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </Campo>
             <Campo label="Veículo">
               <Select value={novoVeiculo} onValueChange={setNovoVeiculo} disabled={!novoCliente}>

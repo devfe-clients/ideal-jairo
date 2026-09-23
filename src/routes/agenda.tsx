@@ -1,18 +1,41 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarDays, Check, MessageCircle, Wrench, X } from "lucide-react";
+import { CalendarDays, Check, MessageCircle, Plus, Wrench, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Vazio } from "@/components/form-kit";
+import { Campo, CampoArea, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useColecao, novoId } from "@/lib/db";
 import { dadosDoAgendamento, novaOrdem } from "@/lib/os-helpers";
-import { dataBR, formatarTelefone, linkWhatsApp } from "@/lib/calc";
+import { dataBR, formatarDoc, formatarPlaca, formatarTelefone, linkWhatsApp } from "@/lib/calc";
 import { useAuth } from "@/lib/auth";
-import type { Agendamento, Cliente, OrdemServico, Veiculo } from "@/lib/schemas";
+import {
+  agendamentoSchema,
+  type Agendamento,
+  type Cliente,
+  type Config,
+  type OrdemServico,
+  type ServicoBase,
+  type Veiculo,
+} from "@/lib/schemas";
 
 export const Route = createFileRoute("/agenda")({
   head: () => ({
@@ -49,6 +72,49 @@ function AgendaPage() {
   const { dados: ordens, salvar: salvarOS } = useColecao<OrdemServico>("ordens");
   const [dia, setDia] = useState(() => new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState("Todos");
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const { dados: servicos } = useColecao<ServicoBase>("servicos");
+  const { dados: configs } = useColecao<Config & { id: string }>("config");
+
+  const vaziomanual = {
+    nome: "", cpfCnpj: "", telefone: "", email: "", endereco: "",
+    placa: "", marca: "", modelo: "",
+    ano: new Date().getFullYear(), km: 0,
+    servico: "", descricao: "",
+    data: dia, hora: "",
+    status: "Confirmado" as const,
+    consentimentoLgpd: true,
+  };
+  const formManual = useFormularioZod(agendamentoSchema, vaziomanual);
+
+  const config = configs[0];
+
+  function horariosDisponiveis(dataSel: string) {
+    if (!config || !dataSel) return [];
+    const [hi, mi] = config.horaInicio.split(":").map(Number);
+    const [hf, mf] = config.horaFim.split(":").map(Number);
+    const inicio = (hi ?? 8) * 60 + (mi ?? 0);
+    const fim = (hf ?? 18) * 60 + (mf ?? 0);
+    const slots: string[] = [];
+    for (let m = inicio; m < fim; m += config.intervaloMinutos) {
+      slots.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+    }
+    return slots;
+  }
+
+  async function salvarManual() {
+    const dados = formManual.validar();
+    if (!dados) { toast.error("Confira os campos destacados."); return; }
+    const registro = {
+      ...dados,
+      id: novoId(),
+      criadoEm: new Date().toISOString(),
+    } as Agendamento;
+    await salvar(registro, usuario?.uid ?? "sistema");
+    toast.success("Agendamento criado.");
+    setModalAberto(false);
+  }
 
   const doDia = useMemo(
     () =>
@@ -136,6 +202,12 @@ function AgendaPage() {
               <option key={s}>{s}</option>
             ))}
           </select>
+          <Button size="sm" onClick={() => {
+            formManual.reset({ ...vaziomanual, data: dia });
+            setModalAberto(true);
+          }}>
+            <Plus className="mr-1 h-4 w-4" /> Novo agendamento
+          </Button>
         </>
       }
     >
@@ -206,6 +278,80 @@ function AgendaPage() {
           ))}
         </div>
       )}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Novo agendamento manual</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoTexto label="Nome completo" className="sm:col-span-2"
+              valor={String(formManual.valores["nome"] ?? "")} erro={formManual.erros["nome"]}
+              onChange={(v) => formManual.set("nome", v)} />
+            <CampoTexto label="CPF / CNPJ (opcional)"
+              valor={formatarDoc(String(formManual.valores["cpfCnpj"] ?? ""))} erro={formManual.erros["cpfCnpj"]}
+              onChange={(v) => formManual.set("cpfCnpj", v)} />
+            <CampoTexto label="Telefone / WhatsApp"
+              valor={formatarTelefone(String(formManual.valores["telefone"] ?? ""))} erro={formManual.erros["telefone"]}
+              onChange={(v) => formManual.set("telefone", v)} />
+            <CampoTexto label="E-mail (opcional)"
+              valor={String(formManual.valores["email"] ?? "")} erro={formManual.erros["email"]}
+              onChange={(v) => formManual.set("email", v)} />
+            <CampoTexto label="Placa"
+              valor={formatarPlaca(String(formManual.valores["placa"] ?? ""))} erro={formManual.erros["placa"]}
+              onChange={(v) => formManual.set("placa", formatarPlaca(v))} />
+            <CampoTexto label="Marca"
+              valor={String(formManual.valores["marca"] ?? "")} erro={formManual.erros["marca"]}
+              onChange={(v) => formManual.set("marca", v)} />
+            <CampoTexto label="Modelo"
+              valor={String(formManual.valores["modelo"] ?? "")} erro={formManual.erros["modelo"]}
+              onChange={(v) => formManual.set("modelo", v)} />
+            <CampoTexto label="Ano" type="number"
+              valor={String(formManual.valores["ano"] ?? "")} erro={formManual.erros["ano"]}
+              onChange={(v) => formManual.set("ano", v)} />
+            <CampoTexto label="Quilometragem" type="number"
+              valor={String(formManual.valores["km"] ?? "")} erro={formManual.erros["km"]}
+              onChange={(v) => formManual.set("km", v)} />
+            <Campo label="Serviço" erro={formManual.erros["servico"]}>
+              <Select value={String(formManual.valores["servico"] ?? "")} onValueChange={(v) => formManual.set("servico", v)}>
+                <SelectTrigger><SelectValue placeholder="Escolha o serviço" /></SelectTrigger>
+                <SelectContent>
+                  {servicos.map((s) => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
+                  <SelectItem value="Outro / não sei informar">Outro / não sei informar</SelectItem>
+                </SelectContent>
+              </Select>
+            </Campo>
+            <Campo label="Status" erro={formManual.erros["status"]}>
+              <Select value={String(formManual.valores["status"] ?? "Confirmado")} onValueChange={(v) => formManual.set("status", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Pendente", "Confirmado", "Cancelado", "Convertido"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+            <CampoTexto label="Data" type="date"
+              valor={String(formManual.valores["data"] ?? "")} erro={formManual.erros["data"]}
+              onChange={(v) => { formManual.set("data", v); formManual.set("hora", ""); }} />
+            <Campo label="Horário" erro={formManual.erros["hora"]}>
+              <div className="flex flex-wrap gap-2">
+                {horariosDisponiveis(String(formManual.valores["data"] ?? "")).map((h) => (
+                  <Button key={h} type="button" size="sm"
+                    variant={formManual.valores["hora"] === h ? "default" : "outline"}
+                    onClick={() => formManual.set("hora", h)}>{h}</Button>
+                ))}
+              </div>
+            </Campo>
+            <CampoArea label="Observações" className="sm:col-span-2"
+              valor={String(formManual.valores["descricao"] ?? "")} erro={formManual.erros["descricao"]}
+              onChange={(v) => formManual.set("descricao", v)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalAberto(false)}>Cancelar</Button>
+            <Button onClick={() => void salvarManual()}>Salvar agendamento</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

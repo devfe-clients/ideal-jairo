@@ -112,13 +112,13 @@ function ComprasPage() {
       return;
     }
     const registro: Compra = { ...dados, id: editando?.id ?? novoId() };
-    await salvar(registro, usuario.nome);
+    await salvar(registro, usuario?.nome ?? "sistema");
     setAberto(false);
     toast.success(editando ? "Compra atualizada." : "Compra registrada.");
   }
 
   async function receber(c: Compra) {
-    await salvar({ ...c, status: "Recebida" }, usuario.nome);
+    await salvar({ ...c, status: "Recebida" }, usuario?.nome ?? "sistema");
     await salvarLancamento(
       {
         id: novoId(),
@@ -132,7 +132,7 @@ function ComprasPage() {
         osId: c.osId ?? "",
         clienteId: "",
       },
-      usuario.nome,
+      usuario?.nome ?? "sistema",
     );
     if (c.paraEstoque) {
       const existente = pecas.find(
@@ -141,7 +141,7 @@ function ComprasPage() {
       if (existente) {
         await salvarPeca(
           { ...existente, quantidade: existente.quantidade + c.quantidade, custo: c.valorPago },
-          usuario.nome,
+          usuario?.nome ?? "sistema",
         );
       } else {
         await salvarPeca(
@@ -158,7 +158,7 @@ function ComprasPage() {
             localizacao: "",
             observacoes: `Entrada pela compra de ${dataBR(c.dataSolicitacao)}.`,
           },
-          usuario.nome,
+          usuario?.nome ?? "sistema",
         );
       }
     }
@@ -241,7 +241,7 @@ function ComprasPage() {
                         variant="ghost"
                         className="text-destructive"
                         onClick={() => {
-                          void remover(c.id, usuario.nome);
+                          void remover(c.id, usuario?.nome ?? "sistema");
                           toast.success("Compra excluída.");
                         }}
                       >
