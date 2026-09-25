@@ -5,6 +5,7 @@ import {
   Camera,
   CheckCircle2,
   CheckSquare,
+  Download,
   MessageCircle,
   Plus,
   Printer,
@@ -20,6 +21,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -87,6 +95,8 @@ function DetalheOS() {
 
   const original = ordens.find((o) => o.id === id);
   const [osState, setOS] = useState<OrdemServico | null>(null);
+  const [dialogFinalizar, setDialogFinalizar] = useState(false);
+  const [osParaFinalizar, setOsParaFinalizar] = useState<OrdemServico | null>(null);
 const [modalPeca, setModalPeca] = useState<{
   itemId: string;
   nome: string;
@@ -143,6 +153,213 @@ async function criarPecaNoEstoque() {
     () => (osState ? totaisOS(osState, osState.tipo === "orcamento") : null),
     [osState],
   );
+
+  async function construirHtmlImpressao(): Promise<string> {
+    if (!osState) return "";
+    const os = osState;
+    const numero = os.numero ?? "documento";
+    const c = clientes.find((x) => x.id === os.clienteId);
+    const v = veiculos.find((x) => x.id === os.veiculoId);
+    const { brl, dataBR, formatarDoc, formatarTelefone, itemTotal, totaisOS } = await import("@/lib/calc");
+    const { EMPRESA } = await import("@/lib/empresa");
+    const t = totaisOS(os, os.tipo === "orcamento");
+    const itens = os.tipo === "orcamento" ? os.itens.filter((i) => i.aprovado) : os.itens;
+    const servicos = itens.filter((i) => i.tipo === "servico");
+    const pecas = itens.filter((i) => i.tipo === "peca");
+    const nomeMec = (id?: string) => usuarios.find((m) => m.id === id)?.nome ?? "";
+
+    // Converte logo para base64
+    let logoB64 = "";
+    try {
+      const r = await fetch("/logo-ideal-jairo.jpg");
+      const blob = await r.blob();
+      logoB64 = await new Promise<string>((res) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result as string);
+        fr.readAsDataURL(blob);
+      });
+    } catch { /* sem logo */ }
+
+    const linhaItem = (i: (typeof itens)[0]) => `
+      <tr>
+        <td>${i.descricao}${i.tipo === "servico" && nomeMec(i.mecanicoId) ? ` — mecânico: ${nomeMec(i.mecanicoId)}` : ""}</td>
+        <td style="text-align:center">${i.quantidade}</td>
+        <td style="text-align:right">${i.valorUnitario.toFixed(2)}</td>
+        <td style="text-align:right">${i.desconto.toFixed(2)}</td>
+        <td style="text-align:right">${itemTotal(i).toFixed(2)}</td>
+      </tr>`;
+
+    const tabela = (titulo: string, linhas: typeof itens) => linhas.length === 0 ? "" : `
+      <table>
+        <thead>
+          <tr><th colspan="5" style="background:#000;color:#fff;text-align:left;padding:4px 8px;text-transform:uppercase">${titulo}</th></tr>
+          <tr>
+            <th style="text-align:left;border:1px solid #000;padding:4px 8px">Descrição</th>
+            <th style="width:56px;border:1px solid #000;padding:4px 8px">Qtd</th>
+            <th style="width:96px;border:1px solid #000;padding:4px 8px">V. Unit</th>
+            <th style="width:80px;border:1px solid #000;padding:4px 8px">Desc.</th>
+            <th style="width:96px;border:1px solid #000;padding:4px 8px">Total</th>
+          </tr>
+        </thead>
+        <tbody>${linhas.map(linhaItem).join("")}</tbody>
+      </table>`;
+
+    const vistoria = (titulo: string, cv?: typeof os.checklistEntrada) => {
+      if (!cv) return "";
+      const marcados = Object.entries(cv.itens).filter(([, val]) => val);
+      return `
+      <div style="margin-top:10px;border:1px solid #000;padding:8px;font-size:11px">
+        <p style="font-weight:bold;text-transform:uppercase">${titulo}</p>
+        <p>Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
+        ${marcados.length > 0 ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`).join("")}</ul>` : ""}
+        ${cv.observacoes ? `<p style="margin-top:4px">Obs.: ${cv.observacoes}</p>` : ""}
+        ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${cv.fotos.map((f, i) => `<img src="${f}" alt="foto ${i+1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
+      </div>`;
+    };
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>${numero}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background:#fff;padding:16px;}
+  @page{size:A4;margin:10mm;}
+  @media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  table{width:100%;border-collapse:collapse;margin-top:10px;}
+  td{border:1px solid #000;padding:4px 8px;}
+  th{border:1px solid #000;padding:4px 8px;font-weight:bold;}
+</style>
+</head>
+<body>
+<div style="max-width:820px;margin:0 auto">
+
+  <!-- Cabeçalho -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      ${logoB64 ? `<img src="${logoB64}" style="width:56px;height:56px;border-radius:4px;object-fit:cover">` : ""}
+      <div style="font-size:11px;line-height:1.5">
+        <p style="font-size:14px;font-weight:bold;text-transform:uppercase">${EMPRESA.nome}</p>
+        <p>CNPJ: ${EMPRESA.cnpj}</p>
+        <p>${EMPRESA.endereco}</p>
+        <p>${EMPRESA.bairro} - ${EMPRESA.cidade} - CEP: ${EMPRESA.cep}</p>
+        <p>Tel: ${EMPRESA.telefone}</p>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:11px;line-height:1.5">
+      <p style="font-size:14px;font-weight:bold;text-transform:uppercase">${os.tipo === "os" ? "Ordem de Serviço" : "Orçamento"}</p>
+      <p style="font-weight:bold">Nº ${numero}</p>
+      <p>Emissão: ${dataBR(os.emissao)}</p>
+      ${os.previsao ? `<p>Previsão: ${dataBR(os.previsao)}</p>` : ""}
+      ${os.saida ? `<p>Saída: ${dataBR(os.saida)}</p>` : ""}
+      <p>Status: ${os.status}</p>
+      <p>Prioridade: ${os.prioridade}</p>
+    </div>
+  </div>
+
+  <!-- Cliente / Veículo -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div style="border:1px solid #000;padding:6px">
+      <p style="font-weight:bold;text-transform:uppercase">Dados do cliente</p>
+      ${c ? `<p>${c.nome}</p><p>CPF/CNPJ: ${formatarDoc(c.cpfCnpj ?? "")}</p><p>Contato: ${formatarTelefone(c.telefone)}</p>${c.endereco ? `<p>${c.endereco}${c.numero ? `, ${c.numero}` : ""}${c.bairro ? ` - ${c.bairro}` : ""}${c.cidade ? ` - ${c.cidade}/${c.uf}` : ""}</p>` : ""}` : ""}
+      <p>Resp. técnico: ${EMPRESA.responsavelTecnico}</p>
+    </div>
+    <div style="border:1px solid #000;padding:6px">
+      <p style="font-weight:bold;text-transform:uppercase">Dados do veículo</p>
+      ${v ? `<p>${v.marca} ${v.modelo} (${v.ano})</p><p>Placa: ${v.placa}</p>${v.cor ? `<p>Cor: ${v.cor}</p>` : ""}${v.motor ? `<p>Motor: ${v.motor}</p>` : ""}${v.chassi ? `<p>Chassi: ${v.chassi}</p>` : ""}` : ""}
+      <p>KM: ${os.km.toLocaleString("pt-BR")} km</p>
+    </div>
+  </div>
+
+  <!-- Problema relatado -->
+  ${os.reclamacao ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p style="font-weight:bold;text-transform:uppercase">Problema relatado</p><p>${os.reclamacao}</p></div>` : ""}
+
+  <!-- Tabelas -->
+  ${tabela("Serviços executados", servicos)}
+  ${tabela("Peças e materiais aplicados", pecas)}
+
+  <!-- Diagnóstico / Observações -->
+  ${os.diagnostico || os.observacoes ? `<div style="border:1px solid #000;padding:6px;margin-top:10px">${os.diagnostico ? `<p><strong>Laudo técnico:</strong> ${os.diagnostico}</p>` : ""}${os.observacoes ? `<p><strong>Observações:</strong> ${os.observacoes}</p>` : ""}</div>` : ""}
+
+  <!-- Vistorias -->
+  ${vistoria("Vistoria de entrada", os.checklistEntrada)}
+  ${vistoria("Vistoria de saída", os.checklistSaida)}
+
+  <!-- Totais -->
+  <div style="display:flex;justify-content:flex-end;margin-top:10px">
+    <table style="width:auto">
+      <tr><td>Total serviços:</td><td style="text-align:right">${brl(t.totalServicos)}</td></tr>
+      <tr><td>Total peças:</td><td style="text-align:right">${brl(t.totalPecas)}</td></tr>
+      ${t.descontoGeral > 0 ? `<tr><td>Desconto geral:</td><td style="text-align:right">- ${brl(t.descontoGeral)}</td></tr>` : ""}
+      <tr><td style="font-weight:bold">Total a pagar:</td><td style="text-align:right;font-weight:bold">${brl(t.total)}</td></tr>
+    </table>
+  </div>
+
+  <!-- Garantia -->
+  <p style="border:1px solid #000;padding:6px;margin-top:10px;font-size:10px"><strong>Garantia:</strong> ${os.garantiaDias} dias. ${EMPRESA.textoGarantia}</p>
+
+  <!-- Assinaturas -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;margin-top:30px;font-size:10px">
+    <div style="border-top:1px solid #000;padding-top:4px">${EMPRESA.nome}<br>Empresa</div>
+    <div style="border-top:1px solid #000;padding-top:4px">${EMPRESA.responsavelTecnico}<br>Responsável técnico</div>
+    <div style="border-top:1px solid #000;padding-top:4px">${c?.nome ?? "Cliente"}<br>Cliente</div>
+  </div>
+
+  <!-- Rodapé -->
+  <p style="text-align:center;font-size:9px;margin-top:12px">${EMPRESA.nome} — documento gerado em ${new Date().toLocaleString("pt-BR")}</p>
+
+</div>
+</body>
+</html>`;
+  }
+
+  async function abrirImpressao() {
+    const html = await construirHtmlImpressao();
+    if (!html) { toast.error("Conteúdo não encontrado."); return; }
+    const win = window.open("", "_blank");
+    if (!win) { toast.error("Popup bloqueado. Permita popups para este site."); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    const imgs = Array.from(win.document.images);
+    const doPrint = () => setTimeout(() => { win.focus(); win.print(); }, 600);
+    if (imgs.length === 0) { doPrint(); return; }
+    let loaded = 0;
+    const tryPrint = () => { if (++loaded >= imgs.length) doPrint(); };
+    imgs.forEach((img) => {
+      if (img.complete) tryPrint();
+      else { img.onload = tryPrint; img.onerror = tryPrint; }
+    });
+  }
+
+  async function baixarPDF() {
+    const html = await construirHtmlImpressao();
+    if (!html) { toast.error("Conteúdo não encontrado."); return; }
+    const numero = osState?.numero ?? "documento";
+    const tid = toast.loading("Gerando PDF…");
+    try {
+      const resp = await fetch("/api/gerar-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html, numero }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${numero}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.dismiss(tid);
+      toast.success(`${numero}.pdf baixado.`);
+    } catch (err) {
+      console.error("baixarPDF:", err);
+      toast.dismiss(tid);
+      toast.error("Erro ao gerar PDF.");
+    }
+  }
 
   if (!osState || !totais) {
     return (
@@ -262,7 +479,6 @@ async function criarPecaNoEstoque() {
       status: "Finalizado",
       saida: os.saida || new Date().toISOString().slice(0, 10),
     };
-    //baixa de estoque apenas das peças próprias da oficina
     for (const item of atualizada.itens) {
       if (item.tipo === "peca" && item.origem === "estoque" && item.pecaId) {
         const peca = pecas.find((p) => p.id === item.pecaId);
@@ -274,10 +490,27 @@ async function criarPecaNoEstoque() {
         }
       }
     }
-    await salvarLancamento(contaReceberDaOS(atualizada), usuario?.uid ?? "sistema");
     await salvarOS(atualizada, usuario?.uid ?? "sistema");
     setOS(atualizada);
-    toast.success("OS finalizada: conta a receber criada e estoque baixado automaticamente.");
+    const jaTemLancamento = lancamentos.some((l) => l.osId === atualizada.id);
+    if (jaTemLancamento) {
+      toast.success("OS finalizada. Conta a receber já existente foi mantida.");
+    } else {
+      setOsParaFinalizar(atualizada);
+      setDialogFinalizar(true);
+    }
+  }
+
+  async function confirmarGerarConta(gerar: boolean) {
+    if (!osParaFinalizar) return;
+    setDialogFinalizar(false);
+    if (gerar) {
+      await salvarLancamento(contaReceberDaOS(osParaFinalizar), usuario?.uid ?? "sistema");
+      toast.success("OS finalizada e conta a receber gerada no financeiro.");
+    } else {
+      toast.success("OS finalizada sem conta a receber.");
+    }
+    setOsParaFinalizar(null);
   }
 
   async function converter() {
@@ -476,7 +709,7 @@ async function criarPecaNoEstoque() {
             <ArrowRightLeft className="mr-1 h-4 w-4" />
             {os.tipo === "orcamento" ? "Virar OS" : "Virar orçamento"}
           </Button>
-          <Button size="sm" variant="secondary" onClick={finalizar}>
+          <Button size="sm" variant="secondary" onClick={() => void finalizar()}>
             <CheckCircle2 className="mr-1 h-4 w-4" /> Finalizar
           </Button>
           <Button size="sm" onClick={() => void salvar()}>
@@ -808,12 +1041,15 @@ async function criarPecaNoEstoque() {
         </TabsContent>
 
         <TabsContent value="documento" className="mt-4">
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div id="impressao-os" className="overflow-x-auto rounded-lg border border-border">
             <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} />
           </div>
           <div className="mt-3 flex gap-2">
-            <Button variant="outline" onClick={() => window.print()}>
-              <Printer className="mr-1 h-4 w-4" /> Imprimir / salvar PDF
+            <Button variant="outline" onClick={() => void abrirImpressao()}>
+              <Printer className="mr-1 h-4 w-4" /> Imprimir
+            </Button>
+            <Button variant="outline" onClick={() => void baixarPDF()}>
+              <Download className="mr-1 h-4 w-4" /> Baixar PDF
             </Button>
             <Button variant="ghost" onClick={() => navigate({ to: "/os" })}>
               Voltar para a lista
@@ -825,6 +1061,29 @@ async function criarPecaNoEstoque() {
       <div className="hidden print:block">
         <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} />
       </div>
+
+      <Dialog open={dialogFinalizar} onOpenChange={(v) => { if (!v) setDialogFinalizar(false); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Gerar conta a receber?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta OS vale{" "}
+            <strong className="text-foreground">
+              {osParaFinalizar ? brl(totaisOS(osParaFinalizar, true).total) : ""}
+            </strong>{" "}
+            e ainda não tem conta a receber criada. Deseja lançar a cobrança no financeiro?
+          </p>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => void confirmarGerarConta(false)}>
+              Salvar mesmo assim
+            </Button>
+            <Button className="bg-success text-success-foreground hover:bg-success/90" onClick={() => void confirmarGerarConta(true)}>
+              Salvar e gerar conta a receber
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {modalPeca ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

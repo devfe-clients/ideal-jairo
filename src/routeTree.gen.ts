@@ -24,6 +24,7 @@ import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
+import { Route as ApiGerarPdfRouteImport } from './routes/api/gerar-pdf'
 import { Route as OsIdRouteImport } from './routes/os_.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -101,6 +102,11 @@ const VeiculosRoute = VeiculosRouteImport.update({
   path: '/veiculos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGerarPdfRoute = ApiGerarPdfRouteImport.update({
+  id: '/api/gerar-pdf',
+  path: '/api/gerar-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OsIdRoute = OsIdRouteImport.update({
   id: '/os_/$id',
   path: '/os/$id',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
+  '/api/gerar-pdf': typeof ApiGerarPdfRoute
   '/os/$id': typeof OsIdRoute
 }
 export interface FileRoutesByTo {
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
+  '/api/gerar-pdf': typeof ApiGerarPdfRoute
   '/os/$id': typeof OsIdRoute
 }
 export interface FileRoutesById {
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/usuarios': typeof UsuariosRoute
   '/veiculos': typeof VeiculosRoute
+  '/api/gerar-pdf': typeof ApiGerarPdfRoute
   '/os_/$id': typeof OsIdRoute
 }
 export interface FileRouteTypes {
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/usuarios'
     | '/veiculos'
+    | '/api/gerar-pdf'
     | '/os/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/usuarios'
     | '/veiculos'
+    | '/api/gerar-pdf'
     | '/os/$id'
   id:
     | '__root__'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/usuarios'
     | '/veiculos'
+    | '/api/gerar-pdf'
     | '/os_/$id'
   fileRoutesById: FileRoutesById
 }
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   UsuariosRoute: typeof UsuariosRoute
   VeiculosRoute: typeof VeiculosRoute
+  ApiGerarPdfRoute: typeof ApiGerarPdfRoute
   OsIdRoute: typeof OsIdRoute
 }
 
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VeiculosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/gerar-pdf': {
+      id: '/api/gerar-pdf'
+      path: '/api/gerar-pdf'
+      fullPath: '/api/gerar-pdf'
+      preLoaderRoute: typeof ApiGerarPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/os_/$id': {
       id: '/os_/$id'
       path: '/os/$id'
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   UsuariosRoute: UsuariosRoute,
   VeiculosRoute: VeiculosRoute,
+  ApiGerarPdfRoute: ApiGerarPdfRoute,
   OsIdRoute: OsIdRoute,
 }
 export const routeTree = rootRouteImport

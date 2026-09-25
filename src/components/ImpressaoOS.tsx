@@ -132,7 +132,7 @@ export function ImpressaoOS({
           {cliente ? (
             <>
               <p>{cliente.nome}</p>
-              <p>CPF/CNPJ: {formatarDoc(cliente.cpfCnpj)}</p>
+              <p>CPF/CNPJ: {formatarDoc(cliente.cpfCnpj ?? "")}</p>
               <p>Contato: {formatarTelefone(cliente.telefone)}</p>
               {cliente.endereco ? (
                 <p>

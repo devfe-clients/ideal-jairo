@@ -8,20 +8,6 @@ import {
   veiculoSchema,
 } from "../schemas";
 
-/**
- * BACKEND — ESTRUTURA PRONTA (sessão 1: sem chaves do Firebase ainda).
- *
- * Princípio: o servidor NUNCA confia no frontend.
- * Toda função aqui:
- *  1. valida a entrada com o MESMO schema Zod usado na tela;
- *  2. verifica sessão e permissão (verificarPermissao);
- *  3. recalcula valores no servidor (nunca aceita totais vindos do cliente);
- *  4. grava auditoria (quem, o quê, quando) — exigência da LGPD.
- *
- * Na sessão 2, o corpo de cada handler passa a usar firebase-admin
- * (Firestore + Auth com custom claims por perfil).
- */
-
 type Contexto = { uid: string; perfil: string };
 
 async function autenticar(): Promise<Contexto> {

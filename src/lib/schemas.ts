@@ -180,6 +180,7 @@ export const servicoBaseSchema = z.object({
   nome: z.string().trim().min(2, "Informe o serviço").max(120),
   valorPadrao: z.coerce.number().min(0).default(0),
   tempoEstimado: z.coerce.number().min(0).default(1),
+  disponivelParaAgendamento: z.boolean().default(true),
 });
 export type ServicoBase = z.infer<typeof servicoBaseSchema> & { id: string };
 
@@ -214,12 +215,14 @@ export const lancamentoSchema = z.object({
   tipo: z.enum(["receber", "pagar"]),
   descricao: z.string().trim().min(2, "Descrição obrigatória").max(160),
   valor: z.coerce.number().min(0.01, "Valor inválido"),
+  valorPago: z.coerce.number().min(0).default(0),
   vencimento: z.string().min(1, "Informe o vencimento"),
   pagoEm: z.string().optional().or(z.literal("")),
   formaPagamento: z
     .enum(["Dinheiro", "PIX", "Débito", "Crédito", "Boleto", "Transferência"])
     .default("PIX"),
   categoria: z.string().trim().max(60).default("Serviços"),
+  observacao: z.string().trim().max(500).default(""),
   osId: z.string().optional().or(z.literal("")),
   clienteId: z.string().optional().or(z.literal("")),
 });
@@ -261,6 +264,16 @@ export const usuarioSchema = z.object({
 });
 export type Usuario = z.infer<typeof usuarioSchema> & { id: string };
 
+export const excecaoDiaSchema = z.object({
+  data: z.string(),                                        
+  fechado: z.boolean().default(false),
+  limitePorHorario: z.coerce.number().int().min(1).max(20).optional(),
+  servicosDisponiveis: z.array(z.string()).optional(),     
+  horariosBlockeados: z.array(z.string()).optional(),      
+  observacao: z.string().max(200).optional().or(z.literal("")),
+});
+export type ExcecaoDia = z.infer<typeof excecaoDiaSchema>;
+
 export const configSchema = z.object({
   diasAtendimento: z.array(z.number().min(0).max(6)).default([1, 2, 3, 4, 5, 6]),
   horaInicio: z.string().default("08:00"),
@@ -269,5 +282,6 @@ export const configSchema = z.object({
   limitePorHorario: z.coerce.number().int().min(1).max(20).default(2),
   diasBloqueados: z.array(z.string()).default([]),
   servicos: z.array(z.string()).default([]),
+  excecoesData: z.array(excecaoDiaSchema).default([]),
 });
 export type Config = z.infer<typeof configSchema>;

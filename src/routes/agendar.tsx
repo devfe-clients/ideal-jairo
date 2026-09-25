@@ -43,9 +43,16 @@ function AgendarWrapper() {
 
 function horariosDoDia(config: Config | undefined, data: string, ocupados: string[]) {
   if (!config || !data) return [];
-  const dia = new Date(`${data}T12:00:00`).getDay();
-  if (!config.diasAtendimento.includes(dia)) return [];
+  const diaSemana = new Date(`${data}T12:00:00`).getDay();
+  if (!config.diasAtendimento.includes(diaSemana)) return [];
   if (config.diasBloqueados.includes(data)) return [];
+
+  const exc = (config.excecoesData ?? []).find((e) => e.data === data);
+  if (exc?.fechado) return [];
+
+  const limite = exc?.limitePorHorario ?? config.limitePorHorario;
+  const bloqueados = exc?.horariosBlockeados ?? [];
+
   const [hi, mi] = config.horaInicio.split(":").map(Number);
   const [hf, mf] = config.horaFim.split(":").map(Number);
   const inicio = (hi ?? 8) * 60 + (mi ?? 0);
@@ -53,8 +60,9 @@ function horariosDoDia(config: Config | undefined, data: string, ocupados: strin
   const slots: string[] = [];
   for (let m = inicio; m < fim; m += config.intervaloMinutos) {
     const hora = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    if (bloqueados.includes(hora)) continue;
     const usados = ocupados.filter((o) => o === hora).length;
-    if (usados < config.limitePorHorario) slots.push(hora);
+    if (usados < limite) slots.push(hora);
   }
   return slots;
 }
@@ -279,7 +287,20 @@ function AgendarPublico() {
           <Select value={String(form.valores["servico"] ?? "")} onValueChange={(v) => form.set("servico", v)}>
             <SelectTrigger><SelectValue placeholder="Escolha o serviço" /></SelectTrigger>
             <SelectContent>
-              {servicos.map((s) => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
+              {(() => {
+                const excData = data
+                  ? (config?.excecoesData ?? []).find((e) => e.data === data)
+                  : undefined;
+                return servicos
+                  .filter((s) => s.disponivelParaAgendamento !== false)
+                  .filter((s) =>
+                    !excData?.servicosDisponiveis ||
+                    excData.servicosDisponiveis.includes(s.nome)
+                  )
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
+                  ));
+              })()}
               <SelectItem value="Outro / não sei informar">Outro / não sei informar</SelectItem>
             </SelectContent>
           </Select>

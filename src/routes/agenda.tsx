@@ -315,8 +315,17 @@ function AgendaPage() {
               <Select value={String(formManual.valores["servico"] ?? "")} onValueChange={(v) => formManual.set("servico", v)}>
                 <SelectTrigger><SelectValue placeholder="Escolha o serviço" /></SelectTrigger>
                 <SelectContent>
-                  {servicos.map((s) => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
+                  {servicos
+                    .filter((s) => s.disponivelParaAgendamento !== false)
+                    .map((s) => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
                   <SelectItem value="Outro / não sei informar">Outro / não sei informar</SelectItem>
+                  {servicos
+                    .filter((s) => s.disponivelParaAgendamento === false)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.nome} disabled>
+                        {s.nome} — indisponível
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Campo>

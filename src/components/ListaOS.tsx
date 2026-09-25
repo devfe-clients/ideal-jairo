@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Campo, Vazio } from "@/components/form-kit";
 import { useColecao } from "@/lib/db";
@@ -43,17 +42,18 @@ import { novaOrdem } from "@/lib/os-helpers";
 import { useAuth } from "@/lib/auth";
 
 export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
-  const { dados: ordens, salvar } = useColecao<OrdemServico>("ordens");
+  const { dados: ordens, salvar, remover } = useColecao<OrdemServico>("ordens");
   const { dados: clientes } = useColecao<Cliente>("clientes");
   const { dados: veiculos } = useColecao<Veiculo>("veiculos");
-  const { usuario } = useAuth();
+  const { usuario, pode } = useAuth();
   const [texto, setTexto] = useState("");
   const [status, setStatus] = useState("aberto");
   const [aberto, setAberto] = useState(false);
   const [novoCliente, setNovoCliente] = useState("");
   const [novoVeiculo, setNovoVeiculo] = useState("");
-const [buscaCliente, setBuscaCliente] = useState("");
-const [comboAberto, setComboAberto] = useState(false);
+  const [buscaCliente, setBuscaCliente] = useState("");
+  const [comboAberto, setComboAberto] = useState(false);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   const lista = useMemo(() => {
     const t = texto.trim().toLowerCase();
@@ -77,6 +77,12 @@ const [comboAberto, setComboAberto] = useState(false);
   }, [ordens, tipo, status, texto, clientes, veiculos]);
 
   const veiculosDoCliente = veiculos.filter((v) => v.clienteId === novoCliente);
+
+  async function excluir(id: string) {
+    await remover(id, usuario?.uid ?? "sistema");
+    toast.success("Registro excluído.");
+    setExcluindoId(null);
+  }
 
   async function criar() {
     if (!novoCliente || !novoVeiculo) {
@@ -132,45 +138,79 @@ const [comboAberto, setComboAberto] = useState(false);
             const v = veiculos.find((x) => x.id === o.veiculoId);
             const t = totaisOS(o, o.tipo === "orcamento");
             return (
-              <Link key={o.id} to="/os/$id" params={{ id: o.id }}>
-                <Card className="h-full transition-colors hover:border-primary">
-                  <CardContent className="space-y-2 p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-display font-bold text-primary">{o.numero}</p>
-                      <Badge variant="secondary">{o.status}</Badge>
-                    </div>
-                    <p className="truncate text-sm font-medium">{c?.nome ?? "Sem cliente"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {v ? `${v.placa} · ${v.marca} ${v.modelo}` : "Sem veículo"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Emissão {dataBR(o.emissao)}</p>
-                    <div className="flex items-center justify-between pt-1 text-sm">
-                      <span className="text-xs text-muted-foreground">
-                        Peças {brl(t.totalPecas)} · M.O. {brl(t.totalServicos)}
-                      </span>
-                      <strong>{brl(t.total)}</strong>
-                    </div>
-                    {tipo === "orcamento" ? (
-                      <Badge
-                        variant="outline"
-                        className={
-                          o.aprovacao === "Aprovado"
-                            ? "text-success"
-                            : o.aprovacao === "Recusado"
-                              ? "text-destructive"
-                              : "text-warning"
-                        }
-                      >
-                        {o.aprovacao}
-                      </Badge>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              </Link>
+              <div key={o.id} className="relative">
+                <Link to="/os/$id" params={{ id: o.id }} className="block h-full">
+                  <Card className="h-full transition-colors hover:border-primary">
+                    <CardContent className={`space-y-2 p-4 ${pode("excluir") ? "pr-10" : ""}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-display font-bold text-primary">{o.numero}</p>
+                        <Badge variant="secondary">{o.status}</Badge>
+                      </div>
+                      <p className="truncate text-sm font-medium">{c?.nome ?? "Sem cliente"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {v ? `${v.placa} · ${v.marca} ${v.modelo}` : "Sem veículo"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Emissão {dataBR(o.emissao)}</p>
+                      <div className="flex items-center justify-between pt-1 text-sm">
+                        <span className="text-xs text-muted-foreground">
+                          Peças {brl(t.totalPecas)} · M.O. {brl(t.totalServicos)}
+                        </span>
+                        <strong>{brl(t.total)}</strong>
+                      </div>
+                      {tipo === "orcamento" ? (
+                        <Badge
+                          variant="outline"
+                          className={
+                            o.aprovacao === "Aprovado"
+                              ? "text-success"
+                              : o.aprovacao === "Recusado"
+                                ? "text-destructive"
+                                : "text-warning"
+                          }
+                        >
+                          {o.aprovacao}
+                        </Badge>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                </Link>
+                {pode("excluir") ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute right-2 top-2 z-10 text-destructive hover:text-destructive"
+                    onClick={(e) => { e.preventDefault(); setExcluindoId(o.id); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                ) : null}
+              </div>
             );
           })}
         </div>
       )}
+
+      <Dialog open={!!excluindoId} onOpenChange={(v) => { if (!v) setExcluindoId(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluindoId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => excluindoId && void excluir(excluindoId)}
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent className="sm:max-w-md">

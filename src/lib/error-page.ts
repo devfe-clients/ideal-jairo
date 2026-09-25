@@ -18,11 +18,11 @@ export function renderErrorPage(): string {
   </head>
   <body>
     <div class="card">
-      <h1>This page didn't load</h1>
-      <p>Something went wrong on our end. You can try refreshing or head back home.</p>
+      <h1>Pagina não encontrada</h1>
+      <p>Alguém tropeçou nos fios.</p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Try again</button>
-        <a class="secondary" href="/">Go home</a>
+        <button class="primary" onclick="location.reload()">Tentar novamente</button>
+        <a class="secondary" href="/">Ir para a página inicial</a>
       </div>
     </div>
   </body>
