@@ -267,6 +267,26 @@ onClick={() => {
               erro={form.erros["estoqueMinimo"]}
               onChange={(v) => form.set("estoqueMinimo", Number(v) || 0)}
             />
+            {(() => {
+              const custo = Number(form.valores["custo"]) || 0;
+              const venda = Number(form.valores["precoVenda"]) || 0;
+              if (custo <= 0 && venda <= 0) return null;
+              const margemPct = custo > 0 ? ((venda - custo) / custo) * 100 : 0;
+              const qualidade =
+                margemPct >= 60
+                  ? { label: "▲ Boa", cor: "text-success" }
+                  : margemPct >= 30
+                  ? { label: "▶ Razoável", cor: "text-warning" }
+                  : { label: "▼ Baixa", cor: "text-destructive" };
+              return (
+                <div className="sm:col-span-2 rounded-md bg-muted px-3 py-2 text-sm flex items-center justify-between">
+                  <span className="text-muted-foreground">Margem sobre custo</span>
+                  <span className={`font-semibold ${qualidade.cor}`}>
+                    {margemPct.toFixed(0)}% {qualidade.label}
+                  </span>
+                </div>
+              );
+            })()}
             <Campo label="Observações" className="sm:col-span-2">
               <Textarea
                 rows={2}

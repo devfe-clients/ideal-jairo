@@ -57,6 +57,56 @@ import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL, OPCOES_VISTORIA, ITENS_INTERNOS } f
 import { MAX_FOTOS, uploadFoto, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
 import { useAuth } from "@/lib/auth";
 
+function ItemVistoria({
+  label,
+  valorAtual,
+  ehOpcaoPadrao,
+  onSelectChange,
+  onOutroBlur,
+}: {
+  label: string;
+  valorAtual: string;
+  ehOpcaoPadrao: boolean;
+  onSelectChange: (v: string) => void;
+  onOutroBlur: (v: string) => void;
+}) {
+  const [outroLocal, setOutroLocal] = useState(ehOpcaoPadrao ? "" : valorAtual);
+  useEffect(() => {
+    setOutroLocal(ehOpcaoPadrao ? "" : valorAtual);
+  }, [valorAtual, ehOpcaoPadrao]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-32 shrink-0 text-xs text-muted-foreground">{label}</span>
+      <Select
+        value={ehOpcaoPadrao ? valorAtual : valorAtual ? "__custom__" : ""}
+        onValueChange={(v) => {
+          if (v === "__custom__") return;
+          setOutroLocal("");
+          onSelectChange(v);
+        }}
+      >
+        <SelectTrigger className="h-8 flex-1">
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">—</SelectItem>
+          {OPCOES_VISTORIA.map((op) => (
+            <SelectItem key={op} value={op}>{op}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        className="h-8 w-28 shrink-0"
+        placeholder="Outro..."
+        value={outroLocal}
+        onChange={(e) => setOutroLocal(e.target.value)}
+        onBlur={() => { if (outroLocal !== valorAtual) onOutroBlur(outroLocal); }}
+      />
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/os_/$id")({
   head: () => ({
     meta: [
@@ -576,22 +626,47 @@ async function criarPecaNoEstoque() {
 
   const BlocoChecklist = ({ lado, titulo }: { lado: "checklistEntrada" | "checklistSaida"; titulo: string }) => {
     const c = os[lado] ?? checklistVazio;
+    const [hodometroLocal, setHodometroLocal] = useState(String(c.hodometro));
+    useEffect(() => { setHodometroLocal(String(c.hodometro)); }, [c.hodometro]);
+
+    const parsearDataHora = (dh: string) => {
+      const [datePart, timePart] = dh.split(" ");
+      const [dia, mes, ano] = (datePart ?? "").split("/");
+      const dataInput = ano && mes && dia ? `${ano}-${mes}-${dia}` : "";
+      const horaInput = timePart ? timePart.slice(0, 5) : "";
+      return { dataInput, horaInput };
+    };
+    const { dataInput, horaInput } = c.dataHora ? parsearDataHora(c.dataHora) : { dataInput: "", horaInput: "" };
+
+    function salvarDataHora(novaData: string, novaHora: string) {
+      if (!novaData && !novaHora) return;
+      const [ano, mes, dia] = novaData.split("-");
+      const dataFormatada = dia && mes && ano ? `${dia}/${mes}/${ano}` : "";
+      const horaFormatada = novaHora || "00:00";
+      atualizarChecklist(lado, "dataHora", `${dataFormatada} ${horaFormatada}`);
+    }
     return (
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">{titulo}</CardTitle>
-              {c.dataHora ? (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Registrada em{" "}
+              {c.dataHora !== undefined ? (
+                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Registrada em</span>
                   <input
-                    type="text"
-                    className="inline border-b border-dashed border-muted-foreground bg-transparent text-xs text-muted-foreground focus:outline-none focus:border-primary w-40"
-                    value={c.dataHora}
-                    onChange={(e) => atualizarChecklist(lado, "dataHora", e.target.value)}
+                    type="date"
+                    className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                    value={dataInput}
+                    onChange={(e) => salvarDataHora(e.target.value, horaInput)}
                   />
-                </p>
+                  <input
+                    type="time"
+                    className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                    value={horaInput}
+                    onChange={(e) => salvarDataHora(dataInput, e.target.value)}
+                  />
+                </div>
               ) : null}
             </div>
             {lado === "checklistSaida" && os.checklistEntrada ? (
@@ -622,8 +697,9 @@ async function criarPecaNoEstoque() {
             <CampoTexto
               label="Hodômetro (km)"
               type="number"
-              valor={String(c.hodometro)}
-              onChange={(v) => atualizarChecklist(lado, "hodometro", Number(v) || 0)}
+              valor={hodometroLocal}
+              onChange={(v) => setHodometroLocal(v)}
+              onBlur={() => atualizarChecklist(lado, "hodometro", Number(hodometroLocal) || 0)}
             />
             <Campo label="Combustível">
               <Select
@@ -661,57 +737,18 @@ async function criarPecaNoEstoque() {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ITENS_VISTORIA.map((item) => {
               const valorAtual = c.itens[item] ?? "";
+              const ehOpcaoPadrao = OPCOES_VISTORIA.includes(valorAtual as typeof OPCOES_VISTORIA[number]);
               return (
-                <div key={item} className="flex items-center gap-2">
-                  <span className="w-32 shrink-0 text-xs text-muted-foreground">{item}</span>
-                  <Select
-                    value={OPCOES_VISTORIA.includes(valorAtual as typeof OPCOES_VISTORIA[number]) ? valorAtual : valorAtual ? "__custom__" : ""}
-                    onValueChange={(v) => {
-                      if (v === "__custom__") return;
-                      atualizarChecklist(lado, "itens", { ...c.itens, [item]: v });
-                    }}
-                  >
-                    <SelectTrigger className="h-8 flex-1">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">—</SelectItem>
-                      {OPCOES_VISTORIA.map((op) => (
-                        <SelectItem key={op} value={op}>{op}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    className="h-8 w-28 shrink-0"
-                    placeholder="Outro..."
-                    value={OPCOES_VISTORIA.includes(valorAtual as typeof OPCOES_VISTORIA[number]) ? "" : valorAtual}
-                    onChange={(e) =>
-                      atualizarChecklist(lado, "itens", { ...c.itens, [item]: e.target.value })
-                    }
-                  />
-                </div>
+                <ItemVistoria
+                  key={`${lado}-${item}`}
+                  label={item}
+                  valorAtual={valorAtual}
+                  ehOpcaoPadrao={ehOpcaoPadrao}
+                  onSelectChange={(v) => atualizarChecklist(lado, "itens", { ...c.itens, [item]: v })}
+                  onOutroBlur={(v) => atualizarChecklist(lado, "itens", { ...c.itens, [item]: v })}
+                />
               );
             })}
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Itens internos do veículo</p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {ITENS_INTERNOS.map((item) => (
-                <label key={item} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={c.itensInternos?.[item] ?? false}
-                    onCheckedChange={(v) =>
-                      atualizarChecklist(lado, "itensInternos", {
-                        ...c.itensInternos,
-                        [item]: Boolean(v),
-                      })
-                    }
-                  />
-                  {item}
-                </label>
-              ))}
-            </div>
           </div>
 
           <CampoArea
@@ -1149,25 +1186,37 @@ async function criarPecaNoEstoque() {
       </div>
 
       <Dialog open={dialogFinalizar} onOpenChange={(v) => { if (!v) setDialogFinalizar(false); }}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Gerar conta a receber?</DialogTitle>
+            <DialogTitle>Finalizar OS</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Esta OS vale{" "}
-            <strong className="text-foreground">
-              {osParaFinalizar ? brl(totaisOS(osParaFinalizar, true).total) : ""}
-            </strong>{" "}
-            e ainda não tem conta a receber criada. Deseja lançar a cobrança no financeiro?
-          </p>
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={() => void confirmarGerarConta(false)}>
-              Salvar mesmo assim
-            </Button>
-            <Button className="bg-success text-success-foreground hover:bg-success/90" onClick={() => void confirmarGerarConta(true)}>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Esta OS vale{" "}
+              <strong className="text-foreground text-base">
+                {osParaFinalizar ? brl(totaisOS(osParaFinalizar, true).total) : ""}
+              </strong>
+              {" "}e ainda não tem conta a receber criada.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Deseja lançar a cobrança no financeiro?
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              className="w-full bg-success text-success-foreground hover:bg-success/90"
+              onClick={() => void confirmarGerarConta(true)}
+            >
               Salvar e gerar conta a receber
             </Button>
-          </DialogFooter>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => void confirmarGerarConta(false)}
+            >
+              Salvar sem lançar no financeiro
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
