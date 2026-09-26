@@ -122,8 +122,10 @@ export const checklistSchema = z.object({
   hodometro: z.coerce.number().min(0).default(0),
   combustivel: z.string().default("1/2 (50%)"),
   itens: z.record(z.string(), z.string()).default({}),
+  itensInternos: z.record(z.string(), z.boolean()).default({}),
   observacoes: z.string().max(1000).default(""),
   fotos: z.array(z.string()).max(15, "Máximo de 15 fotos").default([]),
+  dataHora: z.string().optional(),
 });
 export type Checklist = z.infer<typeof checklistSchema>;
 

@@ -68,7 +68,14 @@ export function ImpressaoOS({
     const marcados = Object.entries(c.itens).filter(([, v]) => v);
     return (
       <div className="mt-3 border border-black p-2 text-[11px]">
-        <p className="font-bold uppercase">{titulo}</p>
+        <p className="font-bold uppercase">
+          {titulo}
+          {c.dataHora ? (
+            <span className="ml-2 font-normal normal-case text-[10px]">
+              — registrada em {c.dataHora}
+            </span>
+          ) : null}
+        </p>
         <p>
           Hodômetro: {c.hodometro.toLocaleString("pt-BR")} km · Combustível: {c.combustivel}
         </p>

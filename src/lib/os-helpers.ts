@@ -45,20 +45,64 @@ export function novaOrdem(
   };
 }
 
-/** Conta a receber criada automaticamente ao finalizar a OS. */
+/**contas a receber criada automaticamente ao finalizar a OS. */
 export function contaReceberDaOS(os: OrdemServico): Lancamento {
   return {
     id: novoId(),
     tipo: "receber",
     descricao: `${os.numero} — serviços e peças`,
     valor: totaisOS(os, true).total,
+    valorPago: 0,
     vencimento: new Date().toISOString().slice(0, 10),
     pagoEm: "",
     formaPagamento: "PIX",
     categoria: "Serviços",
+    observacao: "",
     osId: os.id,
     clienteId: os.clienteId,
   };
+}
+
+/**
+ *contas a pagar de mão de obra geradas automaticamente ao finalizar a OS.
+ *retorna um lançamento por mecânico distinto que tem serviços na OS.
+ */
+export function contasPagarMaoDeObra(
+  os: OrdemServico,
+  mecanicos: { id: string; nome: string }[],
+): Lancamento[] {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const servicosPorMecanico = new Map<string, number>();
+
+  for (const item of os.itens) {
+    if (item.tipo !== "servico") continue;
+    const mecId = item.mecanicoId || os.mecanicoId || "";
+    if (!mecId) continue;
+    const total = item.valorUnitario * item.quantidade - item.desconto;
+    servicosPorMecanico.set(mecId, (servicosPorMecanico.get(mecId) ?? 0) + total);
+  }
+
+  const lancamentos: Lancamento[] = [];
+  for (const [mecId, valor] of servicosPorMecanico) {
+    if (valor <= 0) continue;
+    const mecanico = mecanicos.find((m) => m.id === mecId);
+    if (!mecanico) continue;
+    lancamentos.push({
+      id: novoId(),
+      tipo: "pagar",
+      descricao: `${os.numero} — mão de obra · ${mecanico.nome}`,
+      valor,
+      valorPago: 0,
+      vencimento: hoje,
+      pagoEm: "",
+      formaPagamento: "PIX",
+      categoria: "Mão de obra",
+      observacao: "",
+      osId: os.id,
+      clienteId: "",
+    });
+  }
+  return lancamentos;
 }
 
 export function mensagemOrcamento(

@@ -83,17 +83,17 @@ function EstoquePage() {
     setAberto(true);
   }
 
-  async function confirmar() {
-    const dados = form.validar();
-    if (!dados) {
-      toast.error("Corrija os campos destacados.");
-      return;
-    }
-    const registro: Peca = { ...dados, id: editando?.id ?? novoId() };
-    await salvar(registro, usuario.nome);
-    setAberto(false);
-    toast.success(editando ? "Peça atualizada." : "Peça cadastrada.");
+async function confirmar() {
+  const dados = form.validar();
+  if (!dados) {
+    toast.error("Corrija os campos destacados.");
+    return;
   }
+  const registro: Peca = { ...dados, id: editando?.id ?? novoId() };
+  await salvar(registro, usuario?.nome ?? "sistema");
+  setAberto(false);
+  toast.success(editando ? "Peça atualizada." : "Peça cadastrada.");
+}
 
   return (
     <AppLayout
@@ -150,14 +150,31 @@ function EstoquePage() {
                   <div className="grid grid-cols-2 gap-1 text-sm">
                     <span className="text-muted-foreground">Venda</span>
                     <span className="text-right font-medium">{brl(p.precoVenda)}</span>
-                    {pode("ver-margem") ? (
-                      <>
-                        <span className="text-muted-foreground">Custo</span>
-                        <span className="text-right">{brl(p.custo)}</span>
-                        <span className="text-muted-foreground">Margem no estoque</span>
-                        <span className="text-right text-success">{brl(margem)}</span>
-                      </>
-                    ) : null}
+{pode("ver-margem") ? (
+  <>
+    <span className="text-muted-foreground">Custo</span>
+    <span className="text-right">{brl(p.custo)}</span>
+    {(() => {
+      const margemPct = p.custo > 0 ? ((p.precoVenda - p.custo) / p.custo) * 100 : 0;
+      const qualidade =
+        margemPct >= 60
+          ? { label: "▲ Boa", cor: "text-success" }
+          : margemPct >= 30
+          ? { label: "▶ Razoável", cor: "text-warning" }
+          : { label: "▼ Baixa", cor: "text-destructive" };
+      return (
+        <>
+          <span className="text-muted-foreground">Margem unit.</span>
+          <span className={`text-right font-medium ${qualidade.cor}`}>
+            {margemPct.toFixed(0)}% {qualidade.label}
+          </span>
+        </>
+      );
+    })()}
+    <span className="text-muted-foreground">Margem no estoque</span>
+    <span className="text-right text-success">{brl(margem)}</span>
+  </>
+) : null}
                     <span className="text-muted-foreground">Estoque mínimo</span>
                     <span className="text-right">{p.estoqueMinimo}</span>
                   </div>
@@ -170,10 +187,9 @@ function EstoquePage() {
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => {
-                          void remover(p.id, usuario.nome);
-                          toast.success("Peça excluída.");
-                        }}
+onClick={() => {
+  remover(p.id, usuario?.nome ?? "sistema").then(() => toast.success("Peça excluída.")).catch(() => toast.error("Erro ao excluir."));
+}}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

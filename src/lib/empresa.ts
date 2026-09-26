@@ -46,3 +46,28 @@ export const NIVEIS_COMBUSTIVEL = [
   "3/4 (75%)",
   "Cheio (100%)",
 ] as const;
+
+export const OPCOES_VISTORIA = [
+  "OK",
+  "Arranhões",
+  "Amassados",
+  "Danificado",
+  "Quebrado",
+  "Faltando",
+] as const;
+
+export const ITENS_INTERNOS = [
+  "Documentos do Veículo",
+  "Estepe",
+  "Chave de Roda",
+  "Kit de Primeiros Socorros",
+  "Tapetes",
+  "Chave Reserva",
+  "Código do Rádio",
+  "Extintor de Incêndio",
+  "Macaco",
+  "Triângulo de Sinalização",
+  "Kit de Ferramentas",
+  "Parasol (Protetor Solar)",
+  "Manual do Proprietário",
+] as const;

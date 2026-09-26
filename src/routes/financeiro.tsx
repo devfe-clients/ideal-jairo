@@ -79,13 +79,19 @@ function FinanceiroPage() {
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroStatus, setFiltroStatus] = useState<StatusFiltro>("Todos");
+  const [filtroCategoria, setFiltroCategoria] = useState("Todas");
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState<Lancamento | null>(null);
   const [modalBaixa, setModalBaixa] = useState<Lancamento | null>(null);
   const [modalBaixaValor, setModalBaixaValor] = useState("");
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [modalBaixaParcialMassa, setModalBaixaParcialMassa] = useState(false);
+  const [valorParcialMassa, setValorParcialMassa] = useState("");
+  const [modalRemarcar, setModalRemarcar] = useState(false);
+  const [novoVencimento, setNovoVencimento] = useState("");
   const form = useFormularioZod(lancamentoSchema, vazio);
 
-  // Form de edição local
+  //form de edição local
   const [formEdit, setFormEdit] = useState<Partial<Lancamento>>({});
 
   const doMes = useMemo(
@@ -93,13 +99,14 @@ function FinanceiroPage() {
       lancamentos
         .filter((l) => l.vencimento.startsWith(mes))
         .filter((l) => filtroTipo === "Todos" || l.tipo === filtroTipo)
+        .filter((l) => filtroCategoria === "Todas" || l.categoria === filtroCategoria)
         .filter((l) => {
           if (filtroStatus === "Todos") return true;
           if (filtroStatus === "A pagar") return l.tipo === "pagar";
           return statusLancamento(l) === filtroStatus;
         })
         .sort((a, b) => a.vencimento.localeCompare(b.vencimento)),
-    [lancamentos, mes, filtroTipo, filtroStatus],
+    [lancamentos, mes, filtroTipo, filtroStatus, filtroCategoria],
   );
 
   const totais = useMemo(() => {
@@ -136,6 +143,79 @@ function FinanceiroPage() {
       usuario?.nome ?? "sistema",
     );
     toast.success(novoVP === 0 ? "Baixa desfeita." : "Baixa registrada.");
+  }
+
+  function toggleSelecionado(id: string) {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      novo.has(id) ? novo.delete(id) : novo.add(id);
+      return novo;
+    });
+  }
+
+  function toggleTodos() {
+    if (selecionados.size === doMes.length) {
+      setSelecionados(new Set());
+    } else {
+      setSelecionados(new Set(doMes.map((l) => l.id)));
+    }
+  }
+
+  async function baixarEmMassa() {
+    const alvos = doMes.filter((l) => selecionados.has(l.id));
+    for (const l of alvos) {
+      await salvar(
+        { ...l, valorPago: l.valor, pagoEm: hoje() },
+        usuario?.nome ?? "sistema",
+      );
+    }
+    setSelecionados(new Set());
+    toast.success(`${alvos.length} lançamento(s) baixado(s).`);
+  }
+
+  async function baixarParcialEmMassa() {
+    const valor = Number(valorParcialMassa) || 0;
+    if (valor <= 0) { toast.error("Informe um valor maior que zero."); return; }
+    const alvos = doMes.filter((l) => selecionados.has(l.id));
+    for (const l of alvos) {
+      const novoVP = Math.min((l.valorPago ?? 0) + valor, l.valor);
+      const pagoEm = novoVP >= l.valor ? hoje() : (l.pagoEm || "");
+      await salvar({ ...l, valorPago: novoVP, pagoEm }, usuario?.nome ?? "sistema");
+    }
+    setSelecionados(new Set());
+    setModalBaixaParcialMassa(false);
+    setValorParcialMassa("");
+    toast.success(`Pagamento parcial de ${brl(valor)} aplicado em ${alvos.length} lançamento(s).`);
+  }
+
+  async function excluirEmMassa() {
+    const alvos = doMes.filter((l) => selecionados.has(l.id));
+    for (const l of alvos) {
+      await remover(l.id, usuario?.nome ?? "sistema");
+    }
+    setSelecionados(new Set());
+    toast.success(`${alvos.length} lançamento(s) excluído(s).`);
+  }
+
+  async function remarcarEmMassa() {
+    if (!novoVencimento) { toast.error("Informe a nova data."); return; }
+    const alvos = doMes.filter((l) => selecionados.has(l.id));
+    for (const l of alvos) {
+      await salvar({ ...l, vencimento: novoVencimento }, usuario?.nome ?? "sistema");
+    }
+    setSelecionados(new Set());
+    setModalRemarcar(false);
+    setNovoVencimento("");
+    toast.success(`Vencimento alterado em ${alvos.length} lançamento(s).`);
+  }
+
+  async function reverterEmMassa() {
+    const alvos = doMes.filter((l) => selecionados.has(l.id));
+    for (const l of alvos) {
+      await salvar({ ...l, valorPago: 0, pagoEm: "" }, usuario?.nome ?? "sistema");
+    }
+    setSelecionados(new Set());
+    toast.success(`${alvos.length} lançamento(s) revertido(s) para pendente.`);
   }
 
   async function baixarParcial() {
@@ -212,6 +292,17 @@ function FinanceiroPage() {
           </select>
           <select
             className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(e.target.value)}
+          >
+            <option value="Todas">Todas as categorias</option>
+            <option value="Serviços">Serviços</option>
+            <option value="Mão de obra">Mão de obra</option>
+            <option value="Peças">Peças</option>
+            <option value="Despesa">Despesa</option>
+          </select>
+          <select
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value as StatusFiltro)}
           >
@@ -245,17 +336,60 @@ function FinanceiroPage() {
         />
       </div>
 
+      {selecionados.size > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+          <span className="text-sm font-medium text-primary">
+            {selecionados.size} selecionado(s)
+          </span>
+          <Button size="sm" variant="outline" onClick={() => void baixarEmMassa()}>
+            Baixa total
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setModalBaixaParcialMassa(true); setValorParcialMassa(""); }}>
+            Pagamento parcial
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setModalRemarcar(true); setNovoVencimento(""); }}>
+            Remarcar vencimento
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => void reverterEmMassa()}>
+            Reverter para pendente
+          </Button>
+          {pode("excluir") ? (
+            <Button size="sm" variant="outline" className="text-destructive" onClick={() => void excluirEmMassa()}>
+              Excluir selecionados
+            </Button>
+          ) : null}
+          <Button size="sm" variant="ghost" onClick={() => setSelecionados(new Set())}>
+            Cancelar
+          </Button>
+        </div>
+      ) : null}
+
       {doMes.length === 0 ? (
         <Vazio mensagem="Nenhum lançamento neste período." />
       ) : (
         <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1 pb-1">
+            <input
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer accent-primary"
+              checked={selecionados.size === doMes.length && doMes.length > 0}
+              onChange={toggleTodos}
+            />
+            <span className="text-xs text-muted-foreground">Selecionar todos</span>
+          </div>
           {doMes.map((l) => {
             const cliente = clientes.find((c) => c.id === l.clienteId);
             const st = statusLancamento(l);
             const vp = l.valorPago ?? 0;
             return (
-              <Card key={l.id}>
+              <Card key={l.id} className={selecionados.has(l.id) ? "border-primary/50 bg-primary/5" : ""}>
                 <CardContent className="flex flex-wrap items-center gap-3 p-3">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer accent-primary"
+                    checked={selecionados.has(l.id)}
+                    onChange={() => toggleSelecionado(l.id)}
+                  />
                   {l.tipo === "receber" ? (
                     <ArrowUpCircle className="h-5 w-5 text-success" />
                   ) : (
@@ -263,9 +397,16 @@ function FinanceiroPage() {
                   )}
                   <div className="min-w-52 flex-1">
                     <p className="font-medium">{l.descricao}</p>
+                    {l.tipo === "receber" && cliente ? (
+                      <p className="text-sm font-semibold text-foreground">{cliente.nome}</p>
+                    ) : null}
+                    {l.tipo === "pagar" && l.categoria === "Mão de obra" && l.descricao.includes("·") ? (
+                      <p className="text-sm font-semibold text-foreground">
+                        {l.descricao.split("·").pop()?.trim()}
+                      </p>
+                    ) : null}
                     <p className="text-xs text-muted-foreground">
                       Venc. {dataBR(l.vencimento)} · {l.categoria} · {l.formaPagamento}
-                      {cliente ? ` · ${cliente.nome}` : ""}
                       {l.osId ? ` · Ref: ${l.osId.slice(0, 12)}` : ""}
                     </p>
                     {l.observacao ? (
@@ -522,7 +663,64 @@ function FinanceiroPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Modal baixa parcial */}
+      {/*modal de baixa parcial em massa */}
+      <Dialog open={modalBaixaParcialMassa} onOpenChange={(v) => { if (!v) { setModalBaixaParcialMassa(false); setValorParcialMassa(""); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pagamento parcial — {selecionados.size} lançamento(s)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              O valor informado será somado ao já pago em cada lançamento selecionado.
+            </p>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Valor recebido por lançamento (R$)</label>
+              <Input
+                type="number"
+                autoFocus
+                placeholder="0,00"
+                value={valorParcialMassa}
+                onChange={(e) => setValorParcialMassa(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void baixarParcialEmMassa(); }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setModalBaixaParcialMassa(false); setValorParcialMassa(""); }}>Cancelar</Button>
+            <Button onClick={() => void baixarParcialEmMassa()}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/*modal de remarcar vencimento em massa */}
+      <Dialog open={modalRemarcar} onOpenChange={(v) => { if (!v) { setModalRemarcar(false); setNovoVencimento(""); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remarcar vencimento — {selecionados.size} lançamento(s)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Todos os lançamentos selecionados terão o vencimento alterado para a data informada.
+            </p>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Nova data de vencimento</label>
+              <Input
+                type="date"
+                autoFocus
+                value={novoVencimento}
+                onChange={(e) => setNovoVencimento(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void remarcarEmMassa(); }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setModalRemarcar(false); setNovoVencimento(""); }}>Cancelar</Button>
+            <Button onClick={() => void remarcarEmMassa()}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/*modal de baixa parcial */}
       <Dialog open={!!modalBaixa} onOpenChange={(v) => { if (!v) { setModalBaixa(null); setModalBaixaValor(""); } }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>

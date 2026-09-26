@@ -52,8 +52,8 @@ import {
   type Veiculo,
 } from "@/lib/schemas";
 import { brl, linkWhatsApp, itemTotal, totaisOS } from "@/lib/calc";
-import { contaReceberDaOS, mensagemOrcamento, mensagemPronto, proximoNumero } from "@/lib/os-helpers";
-import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL } from "@/lib/empresa";
+import { contaReceberDaOS, contasPagarMaoDeObra, mensagemOrcamento, mensagemPronto, proximoNumero } from "@/lib/os-helpers";
+import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL, OPCOES_VISTORIA, ITENS_INTERNOS } from "@/lib/empresa";
 import { MAX_FOTOS, uploadFoto, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
 import { useAuth } from "@/lib/auth";
 
@@ -77,6 +77,7 @@ const checklistVazio: Checklist = {
   hodometro: 0,
   combustivel: "1/2 (50%)",
   itens: {},
+  itensInternos: {},
   observacoes: "",
   fotos: [],
 };
@@ -209,7 +210,7 @@ async function criarPecaNoEstoque() {
       const marcados = Object.entries(cv.itens).filter(([, val]) => val);
       return `
       <div style="margin-top:10px;border:1px solid #000;padding:8px;font-size:11px">
-        <p style="font-weight:bold;text-transform:uppercase">${titulo}</p>
+        <p style="font-weight:bold;text-transform:uppercase">${titulo}${cv.dataHora ? ` <span style="font-weight:normal;font-size:10px;text-transform:none">— registrada em ${cv.dataHora}</span>` : ""}</p>
         <p>Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
         ${marcados.length > 0 ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`).join("")}</ul>` : ""}
         ${cv.observacoes ? `<p style="margin-top:4px">Obs.: ${cv.observacoes}</p>` : ""}
@@ -506,9 +507,17 @@ async function criarPecaNoEstoque() {
     setDialogFinalizar(false);
     if (gerar) {
       await salvarLancamento(contaReceberDaOS(osParaFinalizar), usuario?.uid ?? "sistema");
-      toast.success("OS finalizada e conta a receber gerada no financeiro.");
+      const contasPagar = contasPagarMaoDeObra(osParaFinalizar, usuarios);
+      for (const lp of contasPagar) {
+        await salvarLancamento(lp, usuario?.uid ?? "sistema");
+      }
+      const msgPagar =
+        contasPagar.length > 0
+          ? ` e ${contasPagar.length} conta(s) a pagar de mão de obra`
+          : "";
+      toast.success(`OS finalizada. Conta a receber${msgPagar} gerada no financeiro.`);
     } else {
-      toast.success("OS finalizada sem conta a receber.");
+      toast.success("OS finalizada sem lançamentos no financeiro.");
     }
     setOsParaFinalizar(null);
   }
@@ -561,7 +570,8 @@ async function criarPecaNoEstoque() {
     valor: unknown,
   ) {
     const atual = os[lado] ?? checklistVazio;
-    atualizar(lado, { ...atual, [campo]: valor });
+    const dataHora = atual.dataHora ?? new Date().toLocaleString("pt-BR");
+    atualizar(lado, { ...atual, [campo]: valor, dataHora });
   }
 
   const BlocoChecklist = ({ lado, titulo }: { lado: "checklistEntrada" | "checklistSaida"; titulo: string }) => {
@@ -569,7 +579,43 @@ async function criarPecaNoEstoque() {
     return (
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">{titulo}</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">{titulo}</CardTitle>
+              {c.dataHora ? (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Registrada em{" "}
+                  <input
+                    type="text"
+                    className="inline border-b border-dashed border-muted-foreground bg-transparent text-xs text-muted-foreground focus:outline-none focus:border-primary w-40"
+                    value={c.dataHora}
+                    onChange={(e) => atualizarChecklist(lado, "dataHora", e.target.value)}
+                  />
+                </p>
+              ) : null}
+            </div>
+            {lado === "checklistSaida" && os.checklistEntrada ? (
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  const entrada = os.checklistEntrada!;
+                  atualizar("checklistSaida", {
+                    ...checklistVazio,
+                    hodometro: entrada.hodometro,
+                    combustivel: entrada.combustivel,
+                    itens: { ...entrada.itens },
+                    itensInternos: { ...entrada.itensInternos },
+                    fotos: [],
+                    observacoes: "",
+                  });
+                }}
+              >
+                Copiar da entrada
+              </Button>
+            ) : null}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -613,19 +659,59 @@ async function criarPecaNoEstoque() {
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {ITENS_VISTORIA.map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <span className="w-32 shrink-0 text-xs text-muted-foreground">{item}</span>
-                <Input
-                  className="h-8"
-                  placeholder="OK / Arranhões..."
-                  value={c.itens[item] ?? ""}
-                  onChange={(e) =>
-                    atualizarChecklist(lado, "itens", { ...c.itens, [item]: e.target.value })
-                  }
-                />
-              </div>
-            ))}
+            {ITENS_VISTORIA.map((item) => {
+              const valorAtual = c.itens[item] ?? "";
+              return (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="w-32 shrink-0 text-xs text-muted-foreground">{item}</span>
+                  <Select
+                    value={OPCOES_VISTORIA.includes(valorAtual as typeof OPCOES_VISTORIA[number]) ? valorAtual : valorAtual ? "__custom__" : ""}
+                    onValueChange={(v) => {
+                      if (v === "__custom__") return;
+                      atualizarChecklist(lado, "itens", { ...c.itens, [item]: v });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 flex-1">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">—</SelectItem>
+                      {OPCOES_VISTORIA.map((op) => (
+                        <SelectItem key={op} value={op}>{op}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    className="h-8 w-28 shrink-0"
+                    placeholder="Outro..."
+                    value={OPCOES_VISTORIA.includes(valorAtual as typeof OPCOES_VISTORIA[number]) ? "" : valorAtual}
+                    onChange={(e) =>
+                      atualizarChecklist(lado, "itens", { ...c.itens, [item]: e.target.value })
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Itens internos do veículo</p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {ITENS_INTERNOS.map((item) => (
+                <label key={item} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={c.itensInternos?.[item] ?? false}
+                    onCheckedChange={(v) =>
+                      atualizarChecklist(lado, "itensInternos", {
+                        ...c.itensInternos,
+                        [item]: Boolean(v),
+                      })
+                    }
+                  />
+                  {item}
+                </label>
+              ))}
+            </div>
           </div>
 
           <CampoArea
