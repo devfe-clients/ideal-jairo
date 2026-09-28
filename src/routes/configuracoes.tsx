@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Database, Save, Server, ShieldCheck, ToggleLeft, ToggleRight, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Database, Save, Server, ShieldCheck, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CampoTexto } from "@/components/form-kit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { configSchema, type Config, type ServicoBase } from "@/lib/schemas";
 import { modoBanco, useColecao } from "@/lib/db";
 import { dataBR } from "@/lib/calc";
@@ -412,45 +411,6 @@ function diasDoMes(ano: number, mes: number) {
         </div>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Database className="h-4 w-4 text-primary" /> Banco de dados / anotações
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span>Modo atual</span>
-                <Badge variant="secondary">{modoBanco}</Badge>
-              </div>
-              <p className="text-muted-foreground">
-Firebase (banco) / Cloudfire R2 (Storange)              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="h-4 w-4 text-primary" /> Segurança / anotações
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Validação compartilhada já estruturada para tela e servidor.</p>
-              <p>Permissões separadas por perfil e administrador com acesso total.</p>
-              <p>Histórico de criação, alteração e exclusão já registrado.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Server className="h-4 w-4 text-primary" /> Publicação
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>©2026 Ideal Jairo - Oficina.</p>
-            </CardContent>
-          </Card>
         </div>
       </div>
 

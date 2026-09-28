@@ -138,13 +138,14 @@ export function semear() {
           pecaId: "",
         },
       ],
-      checklistEntrada: {
-        hodometro: 210082,
-        combustivel: "1/2 (50%)",
-        itens: { "Lataria Frontal": "Arranhões", "Lat. Direita": "Arranhões" },
-        observacoes: "Tapetes presentes.",
-        fotos: [],
-      },
+checklistEntrada: {
+  hodometro: 210082,
+  combustivel: "1/2 (50%)",
+  itens: { "Lataria Frontal": "Arranhões", "Lat. Direita": "Arranhões" },
+  itensInternos: {},
+  observacoes: "Tapetes presentes.",
+  fotos: [],
+},
       criadoEm: new Date().toISOString(),
       criadoPor: "Jairo Alves de Oliveira",
     },
@@ -255,14 +256,14 @@ export function semear() {
     },
   ];
 
-  const servicos: ServicoBase[] = [
-    { id: "SRV1", nome: "Troca de óleo e filtros", valorPadrao: 120, tempoEstimado: 1 },
-    { id: "SRV2", nome: "Revisão completa", valorPadrao: 320, tempoEstimado: 3 },
-    { id: "SRV3", nome: "Troca de pastilhas de freio", valorPadrao: 180, tempoEstimado: 2 },
-    { id: "SRV4", nome: "Troca de rolamento com cubo", valorPadrao: 150, tempoEstimado: 2 },
-    { id: "SRV5", nome: "Diagnóstico eletrônico (scanner)", valorPadrao: 130, tempoEstimado: 1 },
-    { id: "SRV6", nome: "Alinhamento e balanceamento", valorPadrao: 140, tempoEstimado: 1 },
-  ];
+const servicos: ServicoBase[] = [
+  { id: "SRV1", nome: "Troca de óleo e filtros", valorPadrao: 120, tempoEstimado: 1, disponivelParaAgendamento: true },
+  { id: "SRV2", nome: "Revisão completa", valorPadrao: 320, tempoEstimado: 3, disponivelParaAgendamento: true },
+  { id: "SRV3", nome: "Troca de pastilhas de freio", valorPadrao: 180, tempoEstimado: 2, disponivelParaAgendamento: true },
+  { id: "SRV4", nome: "Troca de rolamento com cubo", valorPadrao: 150, tempoEstimado: 2, disponivelParaAgendamento: true },
+  { id: "SRV5", nome: "Diagnóstico eletrônico (scanner)", valorPadrao: 130, tempoEstimado: 1, disponivelParaAgendamento: true },
+  { id: "SRV6", nome: "Alinhamento e balanceamento", valorPadrao: 140, tempoEstimado: 1, disponivelParaAgendamento: true },
+];
 
   const compras: Compra[] = [
     {
@@ -295,44 +296,50 @@ export function semear() {
     },
   ];
 
-  const lancamentos: Lancamento[] = [
-    {
-      id: "LAN1",
-      tipo: "receber",
-      descricao: "OS-2026-09-001 — Arthur Xavier",
-      valor: 380,
-      vencimento: iso(hoje),
-      pagoEm: iso(hoje),
-      formaPagamento: "PIX",
-      categoria: "Serviços",
-      osId: "OS1",
-      clienteId: "CLI1",
-    },
-    {
-      id: "LAN2",
-      tipo: "pagar",
-      descricao: "Autopeças Ocian — rolamento com cubo",
-      valor: 155,
-      vencimento: maisDias(5),
-      pagoEm: "",
-      formaPagamento: "Boleto",
-      categoria: "Peças",
-      osId: "OS1",
-      clienteId: "",
-    },
-    {
-      id: "LAN3",
-      tipo: "pagar",
-      descricao: "Energia elétrica",
-      valor: 410,
-      vencimento: maisDias(9),
-      pagoEm: "",
-      formaPagamento: "Boleto",
-      categoria: "Despesas fixas",
-      osId: "",
-      clienteId: "",
-    },
-  ];
+const lancamentos: Lancamento[] = [
+  {
+    id: "LAN1",
+    tipo: "receber",
+    descricao: "OS-2026-09-001 — Arthur Xavier",
+    valor: 380,
+    valorPago: 380,
+    vencimento: iso(hoje),
+    pagoEm: iso(hoje),
+    formaPagamento: "PIX",
+    categoria: "Serviços",
+    observacao: "",
+    osId: "OS1",
+    clienteId: "CLI1",
+  },
+  {
+    id: "LAN2",
+    tipo: "pagar",
+    descricao: "Autopeças Ocian — rolamento com cubo",
+    valor: 155,
+    valorPago: 0,
+    vencimento: maisDias(5),
+    pagoEm: "",
+    formaPagamento: "Boleto",
+    categoria: "Peças",
+    observacao: "",
+    osId: "OS1",
+    clienteId: "",
+  },
+  {
+    id: "LAN3",
+    tipo: "pagar",
+    descricao: "Energia elétrica",
+    valor: 410,
+    valorPago: 0,
+    vencimento: maisDias(9),
+    pagoEm: "",
+    formaPagamento: "Boleto",
+    categoria: "Despesas fixas",
+    observacao: "",
+    osId: "",
+    clienteId: "",
+  },
+];
 
   const agendamentos: Agendamento[] = [
     {
@@ -383,16 +390,17 @@ export function semear() {
     { id: "USR3", nome: "Patrícia Nunes", email: "patricia@idealjairo.com.br", perfil: "Administrativo", ativo: true },
   ];
 
-  const config: Config & { id: string } = {
-    id: "CONFIG",
-    diasAtendimento: [1, 2, 3, 4, 5, 6],
-    horaInicio: "08:00",
-    horaFim: "18:00",
-    intervaloMinutos: 60,
-    limitePorHorario: 2,
-    diasBloqueados: [],
-    servicos: servicos.map((s) => s.nome),
-  };
+const config: Config & { id: string } = {
+  id: "CONFIG",
+  diasAtendimento: [1, 2, 3, 4, 5, 6],
+  horaInicio: "08:00",
+  horaFim: "18:00",
+  intervaloMinutos: 60,
+  limitePorHorario: 2,
+  diasBloqueados: [],
+  servicos: servicos.map((s) => s.nome),
+  excecoesData: [],
+};
 
   const set = <T,>(nome: Parameters<typeof escreverSync>[0], dados: T[]) => {
     if (lerSync(nome).length === 0) escreverSync(nome, dados);

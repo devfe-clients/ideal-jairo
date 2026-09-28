@@ -82,18 +82,30 @@ function ComprasPage() {
   const [editando, setEditando] = useState<Compra | null>(null);
   const form = useFormularioZod(compraSchema, vazio);
 
-  const lista = useMemo(() => {
-    const t = busca.trim().toLowerCase();
-    return compras
-      .filter((c) => filtro === "Todos" || c.status === filtro)
-      .filter(
-        (c) =>
-          !t ||
-          c.descricao.toLowerCase().includes(t) ||
-          c.fornecedor.toLowerCase().includes(t),
-      )
-      .sort((a, b) => b.dataSolicitacao.localeCompare(a.dataSolicitacao));
-  }, [compras, filtro, busca]);
+const lista = useMemo(() => {
+  const t = busca.trim().toLowerCase();
+  return compras
+    .filter((c) => filtro === "Todos" || c.status === filtro)
+    .filter(
+      (c) =>
+        !t ||
+        c.descricao.toLowerCase().includes(t) ||
+        c.fornecedor.toLowerCase().includes(t),
+    )
+    .sort((a, b) => b.dataSolicitacao.localeCompare(a.dataSolicitacao));
+}, [compras, filtro, busca]);
+
+const fornecedoresUnicos = useMemo(
+  () => Array.from(new Set(compras.map((c) => c.fornecedor).filter(Boolean))).sort(),
+  [compras],
+);
+
+const valorFornecedor = String(form.valores["fornecedor"] ?? "");
+const sugestoesFornecedor = fornecedoresUnicos.filter(
+  (f) =>
+    f.toLowerCase().includes(valorFornecedor.toLowerCase()) &&
+    f !== valorFornecedor,
+);
 
   const totalAberto = compras
     .filter((c) => !["Recebida", "Instalada", "Devolvida/Cancelada"].includes(c.status))
@@ -271,12 +283,27 @@ function ComprasPage() {
               erro={form.erros["descricao"]}
               onChange={(v) => form.set("descricao", v)}
             />
-            <CampoTexto
-              label="Fornecedor / autopeças"
-              valor={String(form.valores["fornecedor"] ?? "")}
-              erro={form.erros["fornecedor"]}
-              onChange={(v) => form.set("fornecedor", v)}
-            />
+<div className="relative">
+  <CampoTexto
+    label="Fornecedor / autopeças"
+    valor={valorFornecedor}
+    erro={form.erros["fornecedor"]}
+    onChange={(v) => form.set("fornecedor", v)}
+  />
+  {sugestoesFornecedor.length > 0 && valorFornecedor.length > 0 && (
+    <ul className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-md">
+      {sugestoesFornecedor.map((s) => (
+        <li
+          key={s}
+          className="cursor-pointer px-3 py-2 text-sm hover:bg-muted"
+          onMouseDown={() => form.set("fornecedor", s)}
+        >
+          {s}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
             <Campo label="Vincular à OS" erro={form.erros["osId"]}>
               <Select
                 value={String(form.valores["osId"] ?? "") || "nenhuma"}
