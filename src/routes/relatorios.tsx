@@ -129,8 +129,9 @@ function RelatoriosPage() {
       .slice(0, 5);
   }, [periodo, clientes]);
 
+  const hoje = new Date().toISOString().slice(0, 10);
   const inadimplencia = lancamentos
-    .filter((l) => l.tipo === "receber" && !l.pagoEm && l.vencimento < ate)
+    .filter((l) => l.tipo === "receber" && !l.pagoEm && l.vencimento < hoje)
     .reduce((s, l) => s + l.valor, 0);
 
   const Indicador = ({ titulo, valor, nota }: { titulo: string; valor: string; nota?: string }) => (

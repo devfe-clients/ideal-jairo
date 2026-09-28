@@ -104,7 +104,7 @@ function Veiculos() {
       id: editando?.id ?? novoId(),
       criadoEm: editando?.criadoEm ?? new Date().toISOString(),
     } as Veiculo;
-    await salvar(registro, usuario.nome);
+    await salvar(registro, usuario?.nome ?? "sistema");
     toast.success(editando ? "Veículo atualizado." : "Veículo cadastrado.");
     setAberto(false);
   }
@@ -119,7 +119,7 @@ function Veiculos() {
       colecao: "veiculos",
       registroId: placa,
       acao: "consulta-placa",
-      usuario: usuario.nome,
+      usuario: usuario?.nome ?? "sistema",
       detalhe: "Consulta registrada para fins de LGPD",
     });
     toast.info(
