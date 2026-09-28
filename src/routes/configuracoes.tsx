@@ -148,6 +148,34 @@ function diasDoMes(ano: number, mes: number) {
     setModalData(null);
   }
 
+  function salvarExcecaoEmLote(exc: ExcecaoLocal, escopo: "semana" | "mes") {
+    if (!config) return;
+    const dataBase = new Date(`${exc.data}T12:00:00`);
+    const diaSemana = dataBase.getDay();
+    const ano = dataBase.getFullYear();
+    const mes = dataBase.getMonth();
+    const totalDias = new Date(ano, mes + 1, 0).getDate();
+    const datas: string[] = [];
+    if (escopo === "semana") {
+      const inicioSemana = new Date(dataBase);
+      inicioSemana.setDate(dataBase.getDate() - diaSemana);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(inicioSemana);
+        d.setDate(inicioSemana.getDate() + i);
+        datas.push(d.toISOString().slice(0, 10));
+      }
+    } else {
+      for (let d = 1; d <= totalDias; d++) {
+        datas.push(`${ano}-${String(mes + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+      }
+    }
+    const semEssas = (config.excecoesData ?? []).filter((e) => !datas.includes(e.data));
+    const novas = datas.map((data) => ({ ...exc, data }));
+    setConfig({ ...config, excecoesData: [...semEssas, ...novas] } as typeof config);
+    setModalExcecao(null);
+    setModalData(null);
+  }
+
   function removerExcecao(data: string) {
     if (!config) return;
     setConfig({
