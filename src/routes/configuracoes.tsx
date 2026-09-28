@@ -59,7 +59,7 @@ const MESES = [
 
 function ConfiguracoesPage() {  const { usuario } = useAuth();
   const { dados, salvar } = useColecao<ConfigRegistro>("config");
-  const { dados: servicos, salvar: salvarServico } = useColecao<ServicoBase>("servicos");
+  const { dados: servicos, salvar: salvarServico, remover: removerServico } = useColecao<ServicoBase>("servicos");
   const [config, setConfig] = useState<ConfigRegistro | null>(null);
   const [servicosTexto, setServicosTexto] = useState("");
   const [bloqueiosTexto, setBloqueiosTexto] = useState("");
@@ -298,9 +298,15 @@ function diasDoMes(ano: number, mes: number) {
                             type="button"
                             className="text-muted-foreground hover:text-destructive"
                             title="Remover serviço"
-                            onClick={() => setServicosTexto((prev) =>
-                              prev.split("\n").filter((s) => s.trim() !== nome).join("\n")
-                            )}
+                            onClick={async () => {
+                              setServicosTexto((prev) =>
+                                prev.split("\n").filter((s) => s.trim() !== nome).join("\n")
+                              );
+                              if (srv) {
+                                await removerServico(srv.id, usuario?.nome ?? "sistema");
+                                toast.success("Serviço removido.");
+                              }
+                            }}
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
