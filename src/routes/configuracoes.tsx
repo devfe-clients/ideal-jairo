@@ -271,54 +271,61 @@ function diasDoMes(ano: number, mes: number) {
                   }}>Adicionar</Button>
                 </div>
                 <div className="space-y-1 rounded-md border border-border">
-                  {servicosTexto.split("\n").map((s) => s.trim()).filter(Boolean).map((nome, idx) => {
-                    const srv = servicos.find((s) => s.nome === nome);
-                    const disponivel = srv ? (srv.disponivelParaAgendamento ?? true) : true;
-                    return (
-                      <div key={idx} className="flex items-center justify-between gap-2 px-3 py-2 even:bg-muted/40">
-                        <span className="text-sm">{nome}</span>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs ${disponivel ? "text-success" : "text-muted-foreground"}`}>
-                            {disponivel ? "Disponível" : "Indisponível"}
-                          </span>
-                          <button
-                            type="button"
-                            title={disponivel ? "Clique para tornar indisponível" : "Clique para tornar disponível"}
-                            onClick={async () => {
-                              if (!srv) { toast.error("Salve as configurações antes de alterar a disponibilidade."); return; }
-                              await salvarServico({ ...srv, disponivelParaAgendamento: !disponivel }, usuario?.uid ?? "sistema");
-                              toast.success(`Serviço ${!disponivel ? "disponível" : "indisponível"} para agendamento.`);
-                            }}
-                          >
-                            {disponivel
-                              ? <ToggleRight className="h-5 w-5 text-success" />
-                              : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}
-                          </button>
-                          <button
-                            type="button"
-                            className="text-muted-foreground hover:text-destructive"
-                            title="Remover serviço"
-                            onClick={async () => {
-                              setServicosTexto((prev) =>
-                                prev.split("\n").filter((s) => s.trim() !== nome).join("\n")
-                              );
-                              if (srv) {
-                                await removerServico(srv.id, usuario?.nome ?? "sistema");
-                                toast.success("Serviço removido.");
-                              }
-                            }}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                  {(() => {
+                    const nomesDoTexto = servicosTexto.split("\n").map((s) => s.trim()).filter(Boolean);
+                    const nomesExtras = servicos.map((s) => s.nome).filter((n) => !nomesDoTexto.includes(n));
+                    const todosNomes = [...nomesDoTexto, ...nomesExtras];
+                    if (todosNomes.length === 0) {
+                      return (
+                        <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                          Nenhum serviço cadastrado.
+                        </p>
+                      );
+                    }
+                    return todosNomes.map((nome, idx) => {
+                      const srv = servicos.find((s) => s.nome === nome);
+                      const disponivel = srv ? (srv.disponivelParaAgendamento ?? true) : true;
+                      return (
+                        <div key={idx} className="flex items-center justify-between gap-2 px-3 py-2 even:bg-muted/40">
+                          <span className="text-sm">{nome}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs ${disponivel ? "text-success" : "text-muted-foreground"}`}>
+                              {disponivel ? "Disponível" : "Indisponível"}
+                            </span>
+                            <button
+                              type="button"
+                              title={disponivel ? "Clique para tornar indisponível" : "Clique para tornar disponível"}
+                              onClick={async () => {
+                                if (!srv) { toast.error("Salve as configurações antes de alterar a disponibilidade."); return; }
+                                await salvarServico({ ...srv, disponivelParaAgendamento: !disponivel }, usuario?.uid ?? "sistema");
+                                toast.success(`Serviço ${!disponivel ? "disponível" : "indisponível"} para agendamento.`);
+                              }}
+                            >
+                              {disponivel
+                                ? <ToggleRight className="h-5 w-5 text-success" />
+                                : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}
+                            </button>
+                            <button
+                              type="button"
+                              className="text-muted-foreground hover:text-destructive"
+                              title="Remover serviço"
+                              onClick={async () => {
+                                setServicosTexto((prev) =>
+                                  prev.split("\n").filter((s) => s.trim() !== nome).join("\n")
+                                );
+                                if (srv) {
+                                  await removerServico(srv.id, usuario?.nome ?? "sistema");
+                                  toast.success("Serviço removido.");
+                                }
+                              }}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                  {!servicosTexto.trim() && (
-                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                      Nenhum serviço cadastrado.
-                    </p>
-                  )}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
