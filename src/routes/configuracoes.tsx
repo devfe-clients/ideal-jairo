@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { configSchema, type Config, type ServicoBase } from "@/lib/schemas";
-import { modoBanco, useColecao } from "@/lib/db";
+import { modoBanco, novoId, useColecao } from "@/lib/db";
 import { dataBR } from "@/lib/calc";
 import { useAuth } from "@/lib/auth";
 
@@ -277,26 +277,40 @@ function diasDoMes(ano: number, mes: number) {
                     className="h-8 flex-1 rounded-md border border-input bg-background px-3 text-sm"
                     placeholder="Nome do novo serviço..."
                     id="novo-servico-input"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const input = e.currentTarget;
-                        const nome = input.value.trim();
-                        if (!nome) return;
-                        const jaExiste = servicosTexto.split("\n").some((s) => s.trim().toLowerCase() === nome.toLowerCase());
-                        if (!jaExiste) setServicosTexto((prev) => (prev ? prev + "\n" + nome : nome));
-                        input.value = "";
-                      }
-                    }}
+  onKeyDown={async (e) => {
+    if (e.key === "Enter") {
+      const input = e.currentTarget;
+      const nome = input.value.trim();
+      if (!nome) return;
+      const jaExiste = servicos.some((s) => s.nome.toLowerCase() === nome.toLowerCase())
+        || servicosTexto.split("\n").some((s) => s.trim().toLowerCase() === nome.toLowerCase());
+      if (!jaExiste) {
+        await salvarServico(
+          { id: novoId(), nome, disponivelParaAgendamento: true } as ServicoBase,
+          usuario?.uid ?? "sistema",
+        );
+        setServicosTexto((prev) => (prev ? prev + "\n" + nome : nome));
+      }
+      input.value = "";
+    }
+  }}
                   />
-                  <Button size="sm" variant="outline" onClick={() => {
-                    const input = document.getElementById("novo-servico-input") as HTMLInputElement | null;
-                    if (!input) return;
-                    const nome = input.value.trim();
-                    if (!nome) return;
-                    const jaExiste = servicosTexto.split("\n").some((s) => s.trim().toLowerCase() === nome.toLowerCase());
-                    if (!jaExiste) setServicosTexto((prev) => (prev ? prev + "\n" + nome : nome));
-                    input.value = "";
-                  }}>Adicionar</Button>
+  <Button size="sm" variant="outline" onClick={async () => {
+    const input = document.getElementById("novo-servico-input") as HTMLInputElement | null;
+    if (!input) return;
+    const nome = input.value.trim();
+    if (!nome) return;
+    const jaExiste = servicos.some((s) => s.nome.toLowerCase() === nome.toLowerCase())
+      || servicosTexto.split("\n").some((s) => s.trim().toLowerCase() === nome.toLowerCase());
+    if (!jaExiste) {
+      await salvarServico(
+        { id: novoId(), nome, disponivelParaAgendamento: true } as ServicoBase,
+        usuario?.uid ?? "sistema",
+      );
+      setServicosTexto((prev) => (prev ? prev + "\n" + nome : nome));
+    }
+    input.value = "";
+  }}>Adicionar</Button>
                 </div>
                 <div className="space-y-1 rounded-md border border-border">
                   {(() => {

@@ -125,6 +125,9 @@ export function mensagemOrcamento(
     `Total: R$ ${t.total.toFixed(2)}`,
     "",
     "Responsável técnico: Jairo Alves de Oliveira.",
+    "",
+    "⚠️ Valores inicialmente informados são estimativos e podem ser alterados após diagnóstico completo do veículo. A alteração poderá ocorrer para mais ou para menos, conforme a necessidade de peças e serviços. Qualquer alteração será previamente comunicada e aprovada pelo cliente.",
+    "",
     "Podemos aprovar o serviço?",
   ].join("\n");
 }
