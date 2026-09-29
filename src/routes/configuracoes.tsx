@@ -555,9 +555,7 @@ function diasDoMes(ano: number, mes: number) {
                       <span className="ml-1 normal-case text-muted-foreground">(vazio = todos os disponíveis)</span>
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {servicos.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Nenhum serviço cadastrado ainda.</p>
-                      ) : servicos.map((s) => {
+                      {servicos.filter((s) => s.disponivelParaAgendamento !== false).map((s) => {
                         const lista = modalExcecao.servicosDisponiveis;
                         const selecionado = !lista || lista.includes(s.nome);
                         return (
