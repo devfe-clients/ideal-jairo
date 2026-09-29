@@ -299,7 +299,13 @@ function AgendarPublico() {
                   )
                   .map((s) => (
                     <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
-                  ));
+                  )).concat(
+                    servicos.filter((s) => s.disponivelParaAgendamento === false).map((s) => (
+                      <SelectItem key={s.id} value={s.nome} disabled>
+                        {s.nome} — indisponível
+                      </SelectItem>
+                    ))
+                  );
               })()}
               <SelectItem value="Outro / não sei informar">Outro / não sei informar</SelectItem>
             </SelectContent>

@@ -70,12 +70,23 @@ const [calAno, setCalAno] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     const atual = dados[0];
-    if (!atual || config) return;
-    setConfig(structuredClone(atual));
-    setServicosTexto(atual.servicos.join("\n"));
-    setBloqueiosTexto(atual.diasBloqueados.join("\n"));
-    // excecoesData já vem dentro do config clonado
+    if (!atual) return;
+    if (!config) {
+      setConfig(structuredClone(atual));
+      setServicosTexto(atual.servicos.join("\n"));
+      setBloqueiosTexto(atual.diasBloqueados.join("\n"));
+    }
   }, [dados, config]);
+
+  useEffect(() => {
+    if (servicos.length === 0) return;
+    setServicosTexto((prev) => {
+      const existentes = prev.split("\n").map((s) => s.trim()).filter(Boolean);
+      const novos = servicos.map((s) => s.nome).filter((n) => !existentes.includes(n));
+      if (novos.length === 0) return prev;
+      return [...existentes, ...novos].join("\n");
+    });
+  }, [servicos]);
 
   async function confirmar() {
     if (!config) return;
@@ -313,7 +324,7 @@ function diasDoMes(ano: number, mes: number) {
   }}>Adicionar</Button>
                 </div>
                 <div className="space-y-1 rounded-md border border-border">
-                  {(() => {
+{(() => {
                     const nomesDoTexto = servicosTexto.split("\n").map((s) => s.trim()).filter(Boolean);
                     const nomesExtras = servicos.map((s) => s.nome).filter((n) => !nomesDoTexto.includes(n));
                     const todosNomes = [...nomesDoTexto, ...nomesExtras];
@@ -338,9 +349,11 @@ function diasDoMes(ano: number, mes: number) {
                               type="button"
                               title={disponivel ? "Clique para tornar indisponível" : "Clique para tornar disponível"}
                               onClick={async () => {
-                                if (!srv) { toast.error("Salve as configurações antes de alterar a disponibilidade."); return; }
-                                await salvarServico({ ...srv, disponivelParaAgendamento: !disponivel }, usuario?.uid ?? "sistema");
-                                toast.success(`Serviço ${!disponivel ? "disponível" : "indisponível"} para agendamento.`);
+                                const registro = srv
+                                  ? { ...srv, disponivelParaAgendamento: !disponivel }
+                                  : { id: novoId(), nome, disponivelParaAgendamento: !disponivel } as ServicoBase;
+                                await salvarServico(registro, usuario?.uid ?? "sistema");
+                                toast.success(`Serviço ${!disponivel ? "indisponível" : "disponível"} para agendamento.`);
                               }}
                             >
                               {disponivel
@@ -542,7 +555,9 @@ function diasDoMes(ano: number, mes: number) {
                       <span className="ml-1 normal-case text-muted-foreground">(vazio = todos os disponíveis)</span>
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {servicos.filter((s) => s.disponivelParaAgendamento !== false).map((s) => {
+                      {servicos.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Nenhum serviço cadastrado ainda.</p>
+                      ) : servicos.map((s) => {
                         const lista = modalExcecao.servicosDisponiveis;
                         const selecionado = !lista || lista.includes(s.nome);
                         return (

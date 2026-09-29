@@ -21,7 +21,7 @@ const MAPA_COLECAO: Record<ColecaoNome, string> = {
   veiculos:     "veiculos",
   ordens:       "ordens_de_servico",
   pecas:        "estoque",
-  servicos:     "estoque",
+  servicos:     "servicos",
   compras:      "compras",
   lancamentos:  "financeiro/contas_a_receber/lancamentos", 
   agendamentos: "agendamentos",
@@ -136,7 +136,7 @@ export const firebaseAdapter: DBAdapter = {
     }
 
     return onSnapshot(
-      query(collection(firestore, caminhoFirestore(colecao)), orderBy("criadoEm", "desc")),
+      collection(firestore, caminhoFirestore(colecao)),
       cb,
     );
   },

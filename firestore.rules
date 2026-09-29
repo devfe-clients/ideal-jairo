@@ -206,6 +206,11 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if isAdmin();
     }
+    match /servicos/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
 
     // Qualquer coleção ou caminho não listado permanece bloqueado.
     match /{document=**} { allow read, write: if false; }

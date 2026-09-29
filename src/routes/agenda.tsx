@@ -92,13 +92,20 @@ function AgendaPage() {
 
   function horariosDisponiveis(dataSel: string) {
     if (!config || !dataSel) return [];
+    const diaSemana = new Date(`${dataSel}T12:00:00`).getDay();
+    if (!config.diasAtendimento.includes(diaSemana)) return [];
+    if (config.diasBloqueados.includes(dataSel)) return [];
+    const exc = (config.excecoesData ?? []).find((e) => e.data === dataSel);
+    if (exc?.fechado) return [];
+    const bloqueados = exc?.horariosBlockeados ?? [];
     const [hi, mi] = config.horaInicio.split(":").map(Number);
     const [hf, mf] = config.horaFim.split(":").map(Number);
     const inicio = (hi ?? 8) * 60 + (mi ?? 0);
     const fim = (hf ?? 18) * 60 + (mf ?? 0);
     const slots: string[] = [];
     for (let m = inicio; m < fim; m += config.intervaloMinutos) {
-      slots.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+      const hora = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+      if (!bloqueados.includes(hora)) slots.push(hora);
     }
     return slots;
   }
