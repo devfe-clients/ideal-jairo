@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CheckSquare,
   Download,
+  FileText,
   MessageCircle,
   Plus,
   Printer,
@@ -363,6 +364,111 @@ async function criarPecaNoEstoque() {
 </div>
 </body>
 </html>`;
+  }
+
+  async function construirHtmlVistoria(): Promise<string> {
+    if (!osState) return "";
+    const os = osState;
+    const c = clientes.find((x) => x.id === os.clienteId);
+    const v = veiculos.find((x) => x.id === os.veiculoId);
+    const { EMPRESA } = await import("@/lib/empresa");
+
+    let logoB64 = "";
+    try {
+      const r = await fetch("/logo-ideal-jairo.jpg");
+      const blob = await r.blob();
+      logoB64 = await new Promise<string>((res) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result as string);
+        fr.readAsDataURL(blob);
+      });
+    } catch { /* sem logo */ }
+
+    const blocoVistoria = (titulo: string, cv?: typeof os.checklistEntrada) => {
+      if (!cv) return "";
+      const marcados = Object.entries(cv.itens).filter(([, val]) => val);
+      return `
+      <div style="margin-top:12px;border:1px solid #000;padding:8px;font-size:11px">
+        <p style="font-weight:bold;text-transform:uppercase">${titulo}${cv.dataHora ? ` <span style="font-weight:normal;font-size:10px;text-transform:none">— registrada em ${cv.dataHora}</span>` : ""}</p>
+        <p style="margin-top:4px">Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
+        ${marcados.length > 0 ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`).join("")}</ul>` : ""}
+        ${cv.observacoes ? `<p style="margin-top:4px">Obs.: ${cv.observacoes}</p>` : ""}
+        ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${cv.fotos.map((f, i) => `<img src="${f}" alt="foto ${i + 1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
+      </div>`;
+    };
+
+    const temVistoria = os.checklistEntrada || os.checklistSaida;
+    if (!temVistoria) return "";
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Vistoria — ${os.numero}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background:#fff;padding:16px;}
+  @page{size:A4;margin:10mm;}
+  @media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+</head>
+<body>
+<div style="max-width:820px;margin:0 auto">
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      ${logoB64 ? `<img src="${logoB64}" style="width:56px;height:56px;border-radius:4px;object-fit:cover">` : ""}
+      <div style="font-size:11px;line-height:1.5">
+        <p style="font-size:14px;font-weight:bold;text-transform:uppercase">${EMPRESA.nome}</p>
+        <p>CNPJ: ${EMPRESA.cnpj}</p>
+        <p>${EMPRESA.endereco}</p>
+        <p>${EMPRESA.bairro} - ${EMPRESA.cidade} - CEP: ${EMPRESA.cep}</p>
+        <p>Tel: ${EMPRESA.telefone}</p>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:11px;line-height:1.5">
+      <p style="font-size:14px;font-weight:bold;text-transform:uppercase">Vistoria do Veículo</p>
+      <p style="font-weight:bold">OS Nº ${os.numero}</p>
+      ${v ? `<p>${v.marca} ${v.modelo} — ${v.placa}</p>` : ""}
+      ${c ? `<p>Cliente: ${c.nome}</p>` : ""}
+    </div>
+  </div>
+
+  ${blocoVistoria("Vistoria de entrada", os.checklistEntrada)}
+  ${blocoVistoria("Vistoria de saída (entrega)", os.checklistSaida)}
+
+  <p style="text-align:center;font-size:9px;margin-top:16px">${EMPRESA.nome} — documento gerado em ${new Date().toLocaleString("pt-BR")}</p>
+</div>
+</body>
+</html>`;
+  }
+
+  async function baixarPDFVistoria() {
+    const html = await construirHtmlVistoria();
+    if (!html) { toast.error("Nenhuma vistoria registrada nesta OS."); return; }
+    const numero = osState?.numero ?? "documento";
+    const tid = toast.loading("Gerando PDF da vistoria…");
+    try {
+      const resp = await fetch("/api/gerar-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html, numero: `${numero}-vistoria` }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${numero}-vistoria.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast.dismiss(tid);
+      toast.success(`${numero}-vistoria.pdf baixado.`);
+    } catch (err) {
+      console.error("baixarPDFVistoria:", err);
+      toast.dismiss(tid);
+      toast.error("Erro ao gerar PDF da vistoria.");
+    }
   }
 
   async function abrirImpressao() {
@@ -813,6 +919,14 @@ async function criarPecaNoEstoque() {
         <>
           <Button size="sm" variant="outline" onClick={() => window.print()}>
             <Printer className="mr-1 h-4 w-4" /> Imprimir
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void baixarPDFVistoria()}
+            disabled={!os.checklistEntrada && !os.checklistSaida}
+          >
+            <FileText className="mr-1 h-4 w-4" /> Vistoria PDF
           </Button>
           <Button size="sm" variant="outline" asChild>
             <a
