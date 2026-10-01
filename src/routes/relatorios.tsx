@@ -185,9 +185,9 @@ function RelatoriosPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porMes}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="mes" tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} />
+                  <YAxis tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} />
                   <Tooltip formatter={(v: number) => brl(v)} />
                   <Legend />
                   <Bar dataKey="faturamento" name="Faturamento" fill={CORES[0]} radius={4} />

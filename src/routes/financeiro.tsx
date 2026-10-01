@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useColecao, novoId } from "@/lib/db";
-import { lancamentoSchema, type Cliente, type Lancamento } from "@/lib/schemas";
+import { lancamentoSchema, type Cliente, type Lancamento, type OrdemServico } from "@/lib/schemas";
 import { brl, dataBR } from "@/lib/calc";
 import { useAuth } from "@/lib/auth";
 
@@ -76,6 +76,7 @@ function FinanceiroPage() {
   const { usuario, pode } = useAuth();
   const { dados: lancamentos, salvar, remover } = useColecao<Lancamento>("lancamentos");
   const { dados: clientes } = useColecao<Cliente>("clientes");
+  const { dados: ordens } = useColecao<OrdemServico>("ordens");
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroStatus, setFiltroStatus] = useState<StatusFiltro>("Todos");
@@ -407,7 +408,7 @@ function FinanceiroPage() {
                     ) : null}
                     <p className="text-xs text-muted-foreground">
                       Venc. {dataBR(l.vencimento)} · {l.categoria} · {l.formaPagamento}
-                      {l.osId ? ` · Ref: ${l.osId.slice(0, 12)}` : ""}
+                      {l.osId ? ` · ${ordens.find((o) => o.id === l.osId)?.numero ?? l.osId.slice(0, 12)}` : ""}
                     </p>
                     {l.observacao ? (
                       <p className="text-xs text-muted-foreground italic">{l.observacao}</p>
