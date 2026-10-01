@@ -92,12 +92,32 @@ export function ImpressaoOS({
         {c.fotos.length > 0 ? (
           <div className="mt-2 grid grid-cols-4 gap-1">
             {c.fotos.map((f, idx) => (
-              <img
-                key={f.slice(0, 24) + idx}
-                src={f}
-                alt={`Foto da vistoria ${idx + 1}`}
-                className="h-20 w-full rounded object-cover"
-              />
+              <div key={f.slice(0, 24) + idx} className="relative group">
+                <img
+                  src={f}
+                  alt={`Foto da vistoria ${idx + 1}`}
+                  className="h-20 w-full rounded object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center gap-1 rounded bg-black/50 opacity-0 group-hover:opacity-100 print:hidden transition-opacity">
+                  <a
+                    href={f}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded bg-white px-1.5 py-0.5 text-[9px] font-medium text-black hover:bg-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Abrir
+                  </a>
+                  <a
+                    href={f}
+                    download={`vistoria-${idx + 1}.webp`}
+                    className="rounded bg-white px-1.5 py-0.5 text-[9px] font-medium text-black hover:bg-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Baixar
+                  </a>
+                </div>
+              </div>
             ))}
           </div>
         ) : null}
