@@ -1306,6 +1306,9 @@ async function criarPecaNoEstoque() {
                   <CardTitle className="text-base">Produtos/Peças</CardTitle>
                   <p className="text-xs text-muted-foreground">Adicione os produtos e peças utilizados nesta ordem</p>
                 </div>
+                <Button size="sm" variant="outline" onClick={() => void navigate({ to: "/estoque" })}>
+                  Cadastro de Produtos
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -1491,17 +1494,10 @@ async function criarPecaNoEstoque() {
                 <Input
                   type="number"
                   className="h-8 w-32"
-                  value={os.descontoGeral}
+                  value={os.descontoGeral === 0 ? "" : os.descontoGeral}
+                  placeholder="0,00"
                   onChange={(e) => atualizar("descontoGeral", Number(e.target.value) || 0)}
                 />
-                <span className="text-sm text-muted-foreground">Período de garantia:</span>
-                <Input
-                  type="number"
-                  className="h-8 w-24"
-                  value={os.garantiaDias}
-                  onChange={(e) => atualizar("garantiaDias", Number(e.target.value) || 0)}
-                />
-                <span className="text-sm text-muted-foreground">dias</span>
               </div>
               {pode("ver-margem") ? (
                 <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
