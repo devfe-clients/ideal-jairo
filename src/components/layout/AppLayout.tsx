@@ -7,9 +7,11 @@ import {
   ClipboardList,
   FileText,
   Menu,
+  Moon,
   Package,
   Settings,
   ShoppingCart,
+  Sun,
   Users,
   Wallet,
   LayoutDashboard,
@@ -84,6 +86,27 @@ function Marca() {
   );
 }
 
+function useTema() {
+  const [tema, setTema] = useState<"dark" | "light">(() => {
+    if (typeof localStorage === "undefined") return "dark";
+    return (localStorage.getItem("tema") as "dark" | "light") ?? "dark";
+  });
+
+  function alternar() {
+    const novo = tema === "dark" ? "light" : "dark";
+    setTema(novo);
+    localStorage.setItem("tema", novo);
+    const html = document.documentElement;
+    if (novo === "dark") {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
+  }
+
+  return { tema, alternar };
+}
+
 export function AppLayout({
   titulo,
   descricao,
@@ -97,6 +120,7 @@ export function AppLayout({
 }) {
   const [aberto, setAberto] = useState(false);
   const { usuario, sair } = useAuth();
+  const { tema, alternar } = useTema();
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,7 +165,17 @@ export function AppLayout({
               <p className="truncate text-xs text-muted-foreground">{descricao}</p>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">{acoes}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            {acoes}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={alternar}
+              title={tema === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
+            >
+              {tema === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </div>
         </header>
         <main className="p-4 pb-16 sm:p-6">{children}</main>
       </div>

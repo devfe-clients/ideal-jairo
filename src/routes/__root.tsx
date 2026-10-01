@@ -39,12 +39,13 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+function ErrorComponent({ error }: { error: unknown }) {
+  const err = error instanceof Error ? error : new Error(String(error));
+  console.error(err);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    reportLovableError(err, { boundary: "tanstack_root_error_component" });
+  }, [err]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -59,7 +60,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           <button
             onClick={() => {
               router.invalidate();
-              reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -141,8 +141,11 @@ if (
 }
 
 function RootShell({ children }: { children: ReactNode }) {
+  const tema = typeof localStorage !== "undefined"
+    ? (localStorage.getItem("tema") ?? "dark")
+    : "dark";
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={tema === "light" ? "" : "dark"}>
       <head>
         <HeadContent />
       </head>
