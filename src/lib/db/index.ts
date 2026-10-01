@@ -19,10 +19,14 @@ export function useColecao<T extends Registro>(colecao: ColecaoNome) {
   const [carregando, setCarregando] = useState(true);
 
   const recarregar = useCallback(() => {
-    void db.listar<T>(colecao).then((d) => {
-      setDados(d);
-      setCarregando(false);
-    });
+    void db.listar<T>(colecao)
+      .then((d) => {
+        setDados(d);
+        setCarregando(false);
+      })
+      .catch(() => {
+        setCarregando(false);
+      });
   }, [colecao]);
 
   useEffect(() => {

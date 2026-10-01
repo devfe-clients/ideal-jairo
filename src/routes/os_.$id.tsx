@@ -54,7 +54,7 @@ import {
 } from "@/lib/schemas";
 import { brl, linkWhatsApp, itemTotal, totaisOS } from "@/lib/calc";
 import { contaReceberDaOS, contasPagarMaoDeObra, mensagemOrcamento, mensagemPronto, proximoNumero } from "@/lib/os-helpers";
-import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL, OPCOES_VISTORIA, ITENS_INTERNOS } from "@/lib/empresa";
+import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL, OPCOES_VISTORIA, OPCOES_POR_ITEM, ITENS_INTERNOS } from "@/lib/empresa";
 import { MAX_FOTOS, uploadFoto, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
 import { useAuth } from "@/lib/auth";
 
@@ -76,6 +76,8 @@ function ItemVistoria({
     setOutroLocal(ehOpcaoPadrao ? "" : valorAtual);
   }, [valorAtual, ehOpcaoPadrao]);
 
+  const opcoes = OPCOES_POR_ITEM[label] ?? OPCOES_VISTORIA;
+
   return (
     <div className="rounded-md border border-border p-2 space-y-1.5">
       <span className="block text-xs font-medium text-foreground">{label}</span>
@@ -93,7 +95,7 @@ function ItemVistoria({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">—</SelectItem>
-            {OPCOES_VISTORIA.map((op) => (
+            {opcoes.map((op) => (
               <SelectItem key={op} value={op}>{op}</SelectItem>
             ))}
           </SelectContent>
@@ -143,8 +145,8 @@ function DetalheOS() {
   const { dados: clientes } = useColecao<Cliente>("clientes");
   const { dados: veiculos } = useColecao<Veiculo>("veiculos");
   const { dados: usuarios } = useColecao<Usuario>("usuarios");
-  const { dados: pecas, salvar: salvarPeca } = useColecao<Peca>("pecas");
-  const { dados: servicos } = useColecao<ServicoBase>("servicos");
+  const { dados: pecas, salvar: salvarPeca, carregando: carregandoPecas } = useColecao<Peca>("pecas");
+  const { dados: servicos, salvar: salvarServico } = useColecao<ServicoBase>("servicos");
   const { dados: lancamentos, salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
 
   const original = ordens.find((o) => o.id === id);
@@ -156,6 +158,7 @@ const [modalPeca, setModalPeca] = useState<{
   nome: string;
   custo: string;
   venda: string;
+  margem: string;
 } | null>(null);
 
 async function criarPecaNoEstoque() {
@@ -195,6 +198,40 @@ async function criarPecaNoEstoque() {
   toast.success(`Peça "${nova.nome}" criada no estoque.`);
   setModalPeca(null);
 }
+
+  const [modalNovoServico, setModalNovoServico] = useState<{
+    itemId: string;
+    nome: string;
+    valor: string;
+    custo: string;
+    desconto: string;
+  } | null>(null);
+
+  async function criarNovoServico() {
+    if (!modalNovoServico) return;
+    const novo: ServicoBase = {
+      id: novoId(),
+      nome: modalNovoServico.nome,
+      valorPadrao: Number(modalNovoServico.valor) || 0,
+      tempoEstimado: 1,
+      disponivelParaAgendamento: true,
+    };
+    await salvarServico(novo, usuario?.uid ?? "sistema");
+    setOS((a) =>
+      a
+        ? {
+            ...a,
+            itens: a.itens.map((i) =>
+              i.id === modalNovoServico.itemId
+                ? { ...i, descricao: novo.nome, valorUnitario: novo.valorPadrao ?? 0 }
+                : i,
+            ),
+          }
+        : a,
+    );
+    toast.success(`Serviço "${novo.nome}" criado e aplicado.`);
+    setModalNovoServico(null);
+  }
 
   useEffect(() => {
     if (original && !osState) setOS(structuredClone(original));
@@ -237,9 +274,9 @@ async function criarPecaNoEstoque() {
     const linhaItem = (i: (typeof itens)[0]) => `
       <tr>
         <td>${i.descricao}${i.tipo === "servico" && nomeMec(i.mecanicoId) ? ` — mecânico: ${nomeMec(i.mecanicoId)}` : ""}</td>
-        <td style="text-align:center">${i.quantidade}</td>
-        <td style="text-align:right">${i.valorUnitario.toFixed(2)}</td>
-        <td style="text-align:right">${i.desconto.toFixed(2)}</td>
+        <td style="text-align:center">${Number(i.quantidade ?? 0).toFixed(2)}</td>
+        <td style="text-align:right">${Number(i.valorUnitario ?? 0).toFixed(2)}</td>
+        <td style="text-align:right">${Number(i.desconto ?? 0).toFixed(2)}</td>
         <td style="text-align:right">${itemTotal(i).toFixed(2)}</td>
       </tr>`;
 
@@ -569,7 +606,7 @@ async function criarPecaNoEstoque() {
           ? {
               ...a,
               itens: a.itens.map((i) =>
-                i.id === itemId ? { ...i, descricao: s.nome, valorUnitario: s.valorPadrao } : i,
+                i.id === itemId ? { ...i, descricao: s.nome, valorUnitario: s.valorPadrao ?? 0 } : i,
               ),
             }
           : a,
@@ -845,7 +882,8 @@ async function criarPecaNoEstoque() {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ITENS_VISTORIA.map((item) => {
               const valorAtual = c.itens[item] ?? "";
-              const ehOpcaoPadrao = OPCOES_VISTORIA.includes(valorAtual as typeof OPCOES_VISTORIA[number]);
+              const opcoesDeste = OPCOES_POR_ITEM[item] ?? OPCOES_VISTORIA;
+              const ehOpcaoPadrao = (opcoesDeste as readonly string[]).includes(valorAtual);
               return (
                 <ItemVistoria
                   key={`${lado}-${item}`}
@@ -979,7 +1017,7 @@ async function criarPecaNoEstoque() {
       <Tabs defaultValue="dados" className="no-print">
         <TabsList className="flex-wrap">
           <TabsTrigger value="dados">Dados</TabsTrigger>
-          <TabsTrigger value="itens">Serviços e peças</TabsTrigger>
+          <TabsTrigger value="servicos">Serviços e Produtos</TabsTrigger>
           <TabsTrigger value="vistoria">Vistoria e fotos</TabsTrigger>
           <TabsTrigger value="documento">Documento</TabsTrigger>
         </TabsList>
@@ -1104,191 +1142,374 @@ async function criarPecaNoEstoque() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="itens" className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => adicionarItem("servico")}>
-              <Plus className="mr-1 h-4 w-4" /> Serviço / mão de obra
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => adicionarItem("peca")}>
-              <Plus className="mr-1 h-4 w-4" /> Peça / produto
-            </Button>
-          </div>
+        {/* ── ABA: SERVIÇOS E PRODUTOS ──────────────────────────────── */}
+        <TabsContent value="servicos" className="mt-4 space-y-4">
 
-          {os.itens.length === 0 ? (
-            <Vazio mensagem="Nenhum item adicionado." />
-          ) : (
-            os.itens.map((i) => (
-              <Card key={i.id}>
-                <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-2">
-                    <Badge variant={i.tipo === "peca" ? "secondary" : "outline"}>
-                      {i.tipo === "peca" ? "Peça" : "Mão de obra"}
-                    </Badge>
-                    <Select
-                      value=""
-                      onValueChange={(v) => aplicarValorBase(i.id, i.tipo, v)}
-                    >
-                      <SelectTrigger className="h-8 w-64">
-                        <SelectValue placeholder="Usar valor cadastrado..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(i.tipo === "servico" ? servicos : pecas).map((x) => (
-                          <SelectItem key={x.id} value={x.id}>
-                            {x.nome} —{" "}
-                            {brl("valorPadrao" in x ? x.valorPadrao : (x as Peca).precoVenda)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <label className="flex items-center gap-2 text-xs">
-                      <Checkbox
-                        checked={i.aprovado}
-                        onCheckedChange={(v) => atualizarItem(i.id, "aprovado", Boolean(v))}
-                      />
-                      Aprovado pelo cliente
-                    </label>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="ml-auto text-destructive"
-                      onClick={() =>
-                        setOS((a) => (a ? { ...a, itens: a.itens.filter((x) => x.id !== i.id) } : a))
-                      }
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-<CampoTexto
-  label="Descrição"
-  className="sm:col-span-2"
-  valor={i.descricao}
-  onChange={(v) => atualizarItem(i.id, "descricao", v)}
-  onBlur={() => {
-    if (i.tipo !== "peca") return;
-    if (!i.descricao.trim()) return;
-    if (i.pecaId) return; 
-    const existe = pecas.some(
-      (p) => p.nome.toLowerCase() === i.descricao.toLowerCase(),
-    );
-    if (!existe) {
-      setModalPeca({ itemId: i.id, nome: i.descricao, custo: "", venda: "" });
-    }
-  }}
-/>
-                  <CampoTexto
-                    label="Qtd"
-                    type="number"
-                    valor={String(i.quantidade)}
-                    onChange={(v) => atualizarItem(i.id, "quantidade", Number(v) || 0)}
-                  />
-                  <CampoTexto
-                    label="Valor unitário"
-                    type="number"
-                    valor={String(i.valorUnitario)}
-                    onChange={(v) => atualizarItem(i.id, "valorUnitario", Number(v) || 0)}
-                  />
-                  <CampoTexto
-                    label="Desconto"
-                    type="number"
-                    valor={String(i.desconto)}
-                    onChange={(v) => atualizarItem(i.id, "desconto", Number(v) || 0)}
-                  />
-                  {i.tipo === "peca" ? (
-                    <>
-                      {pode("ver-margem") ? (
-                        <CampoTexto
-                          label="Custo (interno)"
-                          type="number"
-                          valor={String(i.custoUnitario)}
-                          onChange={(v) => atualizarItem(i.id, "custoUnitario", Number(v) || 0)}
-                        />
-                      ) : null}
-                      <Campo label="Origem (uso interno)">
-                        <Select
-                          value={i.origem}
-                          onValueChange={(v) => atualizarItem(i.id, "origem", v)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="estoque">Estoque da oficina</SelectItem>
-                            <SelectItem value="autopecas">Comprada das autopeças</SelectItem>
-                            <SelectItem value="cliente">Fornecida pelo cliente</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </Campo>
-                    </>
-                  ) : (
-                    <Campo label="Mecânico do serviço">
-                      <Select
-                        value={i.mecanicoId || "nenhum"}
-                        onValueChange={(v) =>
-                          atualizarItem(i.id, "mecanicoId", v === "nenhum" ? "" : v)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="nenhum">Não definido</SelectItem>
-                          {mecanicos.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              {m.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Campo>
-                  )}
-                  <div className="flex items-end justify-end sm:col-span-2 lg:col-span-4">
-                    <span className="text-sm">
-                      Total do item: <strong className="text-primary">{brl(itemTotal(i))}</strong>
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-
+          {/* Bloco Serviços */}
           <Card>
-            <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-              <CampoTexto
-                label="Desconto geral"
-                type="number"
-                valor={String(os.descontoGeral)}
-                onChange={(v) => atualizar("descontoGeral", Number(v) || 0)}
-              />
-              <div className="sm:col-span-2 lg:col-span-3 grid gap-1 text-sm">
-                <p className="flex justify-between">
-                  <span>Total de mão de obra</span>
-                  <strong>{brl(totais.totalServicos)}</strong>
-                </p>
-                <p className="flex justify-between">
-                  <span>Total de peças/produtos</span>
-                  <strong>{brl(totais.totalPecas)}</strong>
-                </p>
-                <p className="flex justify-between">
-                  <span>Descontos nos itens</span>
-                  <strong>- {brl(totais.descontoItens)}</strong>
-                </p>
-                <p className="flex justify-between">
-                  <span>Desconto geral</span>
-                  <strong>- {brl(totais.descontoGeral)}</strong>
-                </p>
-                <p className="flex justify-between border-t border-border pt-2 text-base">
-                  <span>Total geral</span>
-                  <strong className="text-primary">{brl(totais.total)}</strong>
-                </p>
-                {pode("ver-margem") ? (
-                  <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
-                    Uso interno — custo das peças {brl(totais.custoPecas)} · margem em peças{" "}
-                    {brl(totais.margemPecas)} · mão de obra {brl(totais.margemServicos)} · resultado
-                    estimado <strong className="text-success">{brl(totais.margemTotal)}</strong>
-                  </p>
-                ) : null}
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle className="text-base">Serviços</CardTitle>
+                  <p className="text-xs text-muted-foreground">Adicione os serviços prestados nesta ordem</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => void navigate({ to: "/configuracoes" })}>
+                  Cadastro de Serviços
+                </Button>
               </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Serviço</th>
+                      <th className="w-24 px-4 py-2 text-center font-medium text-muted-foreground">QTD</th>
+                      <th className="w-32 px-4 py-2 text-right font-medium text-muted-foreground">Preço Unit.</th>
+                      <th className="w-28 px-4 py-2 text-right font-medium text-muted-foreground">Desconto</th>
+                      <th className="w-32 px-4 py-2 text-right font-medium text-muted-foreground">Total</th>
+                      <th className="w-10 px-2 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {os.itens.filter((i) => i.tipo === "servico").length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                          Nenhum serviço adicionado.
+                        </td>
+                      </tr>
+                    ) : (
+                      os.itens
+                        .filter((i) => i.tipo === "servico")
+                        .map((i) => (
+                          <tr key={i.id} className="border-b border-border last:border-0">
+                            <td className="px-4 py-2">
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Select
+                                    value=""
+                                    onValueChange={(v) => aplicarValorBase(i.id, "servico", v)}
+                                  >
+                                    <SelectTrigger className="h-7 w-48 text-xs">
+                                      <SelectValue placeholder="Selecione o serviço" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {servicos.length === 0 ? (
+                                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum serviço cadastrado.</div>
+                                      ) : (
+                                        servicos.map((x) => (
+                                          <SelectItem key={x.id} value={x.id}>
+                                            {x.nome}{x.valorPadrao ? ` — ${brl(x.valorPadrao)}` : ""}
+                                          </SelectItem>
+                                        ))
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    title="Criar novo serviço"
+                                    onClick={() =>
+                                      setModalNovoServico({ itemId: i.id, nome: i.descricao, valor: "", custo: "", desconto: "" })
+                                    }
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Checkbox
+                                      checked={i.aprovado}
+                                      onCheckedChange={(v) => atualizarItem(i.id, "aprovado", Boolean(v))}
+                                    />
+                                    Aprovado pelo cliente
+                                  </label>
+                                  <Select
+                                    value={i.mecanicoId || "nenhum"}
+                                    onValueChange={(v) => atualizarItem(i.id, "mecanicoId", v === "nenhum" ? "" : v)}
+                                  >
+                                    <SelectTrigger className="h-7 w-40 text-xs">
+                                      <SelectValue placeholder="Mecânico" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="nenhum">Sem mecânico</SelectItem>
+                                      {mecanicos.map((m) => (
+                                        <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                className="h-8 w-20 text-center"
+                                value={i.quantidade === 0 ? "" : i.quantidade}
+                                placeholder="0"
+                                onChange={(e) => atualizarItem(i.id, "quantidade", Number(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                className="h-8 w-28 text-right"
+                                value={i.valorUnitario === 0 ? "" : i.valorUnitario}
+                                placeholder="0,00"
+                                onChange={(e) => atualizarItem(i.id, "valorUnitario", Number(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                className="h-8 w-24 text-right"
+                                value={i.desconto === 0 ? "" : i.desconto}
+                                placeholder="0,00"
+                                onChange={(e) => atualizarItem(i.id, "desconto", Number(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-right font-medium">
+                              {brl(itemTotal(i))}
+                            </td>
+                            <td className="px-2 py-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-destructive"
+                                onClick={() =>
+                                  setOS((a) => (a ? { ...a, itens: a.itens.filter((x) => x.id !== i.id) } : a))
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-3 border-t border-border">
+                <Button size="sm" variant="outline" onClick={() => adicionarItem("servico")}>
+                  <Plus className="mr-1 h-4 w-4" /> Adicionar Serviço
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bloco Peças e Produtos */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle className="text-base">Produtos/Peças</CardTitle>
+                  <p className="text-xs text-muted-foreground">Adicione os produtos e peças utilizados nesta ordem</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Produto</th>
+                      <th className="w-24 px-4 py-2 text-center font-medium text-muted-foreground">QTD</th>
+                      <th className="w-32 px-4 py-2 text-right font-medium text-muted-foreground">Preço Unit.</th>
+                      <th className="w-28 px-4 py-2 text-right font-medium text-muted-foreground">Desconto</th>
+                      <th className="w-32 px-4 py-2 text-right font-medium text-muted-foreground">Total</th>
+                      <th className="w-10 px-2 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {os.itens.filter((i) => i.tipo === "peca").length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                          Nenhuma peça ou produto adicionado.
+                        </td>
+                      </tr>
+                    ) : (
+                      os.itens
+                        .filter((i) => i.tipo === "peca")
+                        .map((i) => (
+                          <tr key={i.id} className="border-b border-border last:border-0">
+                            <td className="px-4 py-2">
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Select
+                                    value={i.pecaId || ""}
+                                    onValueChange={(v) => { if (v) aplicarValorBase(i.id, "peca", v); }}
+                                  >
+                                    <SelectTrigger className="h-7 w-48 text-xs">
+                                      <SelectValue placeholder="Usar peça do estoque..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="">digitação livre</SelectItem>
+                                      {carregandoPecas ? (
+                                        <div className="px-3 py-2 text-xs text-muted-foreground">Carregando estoque…</div>
+                                      ) : pecas.length === 0 ? (
+                                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhuma peça no estoque.</div>
+                                      ) : (
+                                        pecas
+                                          .slice()
+                                          .sort((a, b) => a.nome.localeCompare(b.nome))
+                                          .map((x) => (
+                                            <SelectItem key={x.id} value={x.id}>
+                                              {x.nome}{x.codigo ? ` (${x.codigo})` : ""} — {x.quantidade} un · {brl(x.precoVenda)}
+                                            </SelectItem>
+                                          ))
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    title="Criar nova peça no estoque"
+                                    onClick={() =>
+                                      setModalPeca({ itemId: i.id, nome: i.descricao, custo: "", venda: "", margem: "" })
+                                    }
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Checkbox
+                                      checked={i.aprovado}
+                                      onCheckedChange={(v) => atualizarItem(i.id, "aprovado", Boolean(v))}
+                                    />
+                                    Aprovado pelo cliente
+                                  </label>
+                                  <Select
+                                    value={i.origem}
+                                    onValueChange={(v) => atualizarItem(i.id, "origem", v)}
+                                  >
+                                    <SelectTrigger className="h-7 w-44 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="estoque">Estoque da oficina</SelectItem>
+                                      <SelectItem value="autopecas">Comprada das autopeças</SelectItem>
+                                      <SelectItem value="cliente">Fornecida pelo cliente</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {pode("ver-margem") ? (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <span>Custo:</span>
+                                      <Input
+                                        type="number"
+                                        className="h-6 w-20 text-xs"
+                                        value={i.custoUnitario === 0 ? "" : i.custoUnitario}
+                                        placeholder="0,00"
+                                        onChange={(e) => atualizarItem(i.id, "custoUnitario", Number(e.target.value) || 0)}
+                                      />
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                className="h-8 w-20 text-center"
+                                value={i.quantidade === 0 ? "" : i.quantidade}
+                                placeholder="0"
+                                onChange={(e) => atualizarItem(i.id, "quantidade", Number(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                className="h-8 w-28 text-right"
+                                value={i.valorUnitario === 0 ? "" : i.valorUnitario}
+                                placeholder="0,00"
+                                onChange={(e) => atualizarItem(i.id, "valorUnitario", Number(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                className="h-8 w-24 text-right"
+                                value={i.desconto === 0 ? "" : i.desconto}
+                                placeholder="0,00"
+                                onChange={(e) => atualizarItem(i.id, "desconto", Number(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-right font-medium">
+                              {brl(itemTotal(i))}
+                            </td>
+                            <td className="px-2 py-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-destructive"
+                                onClick={() =>
+                                  setOS((a) => (a ? { ...a, itens: a.itens.filter((x) => x.id !== i.id) } : a))
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-3 border-t border-border">
+                <Button size="sm" variant="outline" onClick={() => adicionarItem("peca")}>
+                  <Plus className="mr-1 h-4 w-4" /> Adicionar Produto
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Resumo financeiro */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-md border border-border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Valor de Serviços</p>
+                  <p className="text-lg font-semibold text-foreground">{brl(totais.totalServicos)}</p>
+                </div>
+                <div className="rounded-md border border-border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Valor de Produtos</p>
+                  <p className="text-lg font-semibold text-foreground">{brl(totais.totalPecas)}</p>
+                </div>
+                <div className="rounded-md border border-border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Descontos</p>
+                  <p className="text-lg font-semibold text-destructive">- {brl(totais.descontoItens)}</p>
+                </div>
+                <div className="rounded-md border border-border p-3 text-center bg-primary/5">
+                  <p className="text-xs text-muted-foreground">Valor Total</p>
+                  <p className="text-lg font-semibold text-primary">{brl(totais.total)}</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Desconto geral:</span>
+                <Input
+                  type="number"
+                  className="h-8 w-32"
+                  value={os.descontoGeral}
+                  onChange={(e) => atualizar("descontoGeral", Number(e.target.value) || 0)}
+                />
+                <span className="text-sm text-muted-foreground">Período de garantia:</span>
+                <Input
+                  type="number"
+                  className="h-8 w-24"
+                  value={os.garantiaDias}
+                  onChange={(e) => atualizar("garantiaDias", Number(e.target.value) || 0)}
+                />
+                <span className="text-sm text-muted-foreground">dias</span>
+              </div>
+              {pode("ver-margem") ? (
+                <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                  Uso interno — custo das peças {brl(totais.custoPecas)} · margem em peças{" "}
+                  {brl(totais.margemPecas)} · mão de obra {brl(totais.margemServicos)} · resultado
+                  estimado <strong className="text-success">{brl(totais.margemTotal)}</strong>
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1355,95 +1576,132 @@ async function criarPecaNoEstoque() {
         </DialogContent>
       </Dialog>
 
-      {modalPeca ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-xl space-y-4">
-            <p className="font-semibold text-base">Peça não encontrada no estoque</p>
-            <p className="text-sm text-muted-foreground">
-              Cadastre agora e ela será criada automaticamente.
-            </p>
-            <CampoTexto
-              label="Nome da peça"
-              valor={modalPeca.nome}
-              onChange={(v) => setModalPeca((m) => m ? { ...m, nome: v } : m)}
-            />
-            <CampoTexto
-              label="Valor de custo (R$)"
-              type="number"
-              valor={modalPeca.custo}
-              onChange={(v) => setModalPeca((m) => m ? { ...m, custo: v } : m)}
-              onBlur={() =>
-                setModalPeca((m) => {
-                  if (!m) return m;
-                  if (m.venda) return m;
-                  const custo = Number(m.custo) || 0;
-                  if (!custo) return m;
-                  return { ...m, venda: (custo * 1.6).toFixed(2) };
-                })
-              }
-            />
-            <CampoTexto
-              label="Valor de venda (R$)"
-              type="number"
-              valor={modalPeca.venda}
-              onChange={(v) => setModalPeca((m) => m ? { ...m, venda: v } : m)}
-            />
+      {modalNovoServico ? (
+        <Dialog open onOpenChange={(v) => { if (!v) setModalNovoServico(null); }}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Criar</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-1 pb-1">
+              <p className="text-sm font-medium">Informações do Serviço</p>
+              <p className="text-xs text-muted-foreground">Preencha os dados para criar um novo serviço</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <CampoTexto
+                  label="Nome *"
+                  valor={modalNovoServico.nome}
+                  onChange={(v) => setModalNovoServico((m) => m ? { ...m, nome: v } : m)}
+                />
+              </div>
+              <CampoTexto
+                label="Preço de Venda *"
+                type="number"
+                valor={modalNovoServico.valor}
+                onChange={(v) => setModalNovoServico((m) => m ? { ...m, valor: v } : m)}
+              />
+              <CampoTexto
+                label="Custo Estimado"
+                type="number"
+                valor={modalNovoServico.custo}
+                onChange={(v) => setModalNovoServico((m) => m ? { ...m, custo: v } : m)}
+              />
+              <CampoTexto
+                label="Desconto"
+                type="number"
+                valor={modalNovoServico.desconto}
+                onChange={(v) => setModalNovoServico((m) => m ? { ...m, desconto: v } : m)}
+              />
+            </div>
             {(() => {
-              const custo = Number(modalPeca.custo) || 0;
-              const venda = Number(modalPeca.venda) || 0;
-              const lucro = venda - custo;
-              const margem = custo > 0 ? (lucro / custo) * 100 : 0;
-              const qualidade =
-                margem >= 60
-                  ? { label: "▲ Boa", cor: "text-success" }
-                  : margem >= 30
-                  ? { label: "▶ Razoável", cor: "text-warning" }
-                  : { label: "▼ Baixa", cor: "text-destructive" };
+              const venda = Number(modalNovoServico.valor) || 0;
+              const desconto = Number(modalNovoServico.desconto) || 0;
+              const total = venda - desconto;
+              if (total <= 0) return null;
               return (
-                <>
-                  {custo > 0 ? (
-                    <div className="flex gap-2">
-                      {[40, 60, 80].map((pct) => (
-                        <button
-                          key={pct}
-                          type="button"
-                          className="flex-1 rounded-md border border-border bg-muted py-1 text-xs hover:border-primary"
-                          onClick={() =>
-                            setModalPeca((m) =>
-                              m
-                                ? { ...m, venda: (custo * (1 + pct / 100)).toFixed(2) }
-                                : m,
-                            )
-                          }
-                        >
-                          +{pct}%
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {(venda > 0 || custo > 0) ? (
-                    <div className="rounded-md bg-muted px-3 py-2 text-sm space-y-0.5">
-                      <p className="text-muted-foreground">
-                        Lucro bruto: <strong>{brl(lucro)}</strong>
-                      </p>
-                      <p className={qualidade.cor}>
-                        Margem: <strong>{margem.toFixed(0)}%</strong> {qualidade.label}
-                      </p>
-                    </div>
-                  ) : null}
-                </>
+                <div className="rounded-md bg-muted px-3 py-2 text-sm flex justify-between">
+                  <span className="text-muted-foreground">Valor total do item</span>
+                  <strong className="text-primary">{brl(total)}</strong>
+                </div>
               );
             })()}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setModalPeca(null)}>
-                Ignorar
-              </Button>
-              <Button onClick={() => void criarPecaNoEstoque()}>
-                Criar no estoque
-              </Button>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setModalNovoServico(null)}>Cancelar</Button>
+              <Button onClick={() => void criarNovoServico()}>Criar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
+      {modalPeca ? (
+        <Dialog open onOpenChange={(v) => { if (!v) setModalPeca(null); }}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Criar</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-1 pb-1">
+              <p className="text-sm font-medium">Informações do Produto</p>
+              <p className="text-xs text-muted-foreground">Preencha os dados para criar um novo produto</p>
             </div>
-          </div>
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <CampoTexto
+                  label="Nome do Produto *"
+                  valor={modalPeca.nome}
+                  onChange={(v) => setModalPeca((m) => m ? { ...m, nome: v } : m)}
+                />
+              </div>
+              <CampoTexto
+                label="Valor de Custo"
+                type="number"
+                valor={modalPeca.custo}
+                onChange={(v) => {
+                  setModalPeca((m) => {
+                    if (!m) return m;
+                    const custo = Number(v) || 0;
+                    const margem = Number(m.margem) || 0;
+                    const venda = margem > 0 ? (custo * (1 + margem / 100)).toFixed(2) : m.venda;
+                    return { ...m, custo: v, venda };
+                  });
+                }}
+              />
+              <CampoTexto
+                label="Margem"
+                type="number"
+                valor={modalPeca.margem ?? ""}
+                onChange={(v) => {
+                  setModalPeca((m) => {
+                    if (!m) return m;
+                    const custo = Number(m.custo) || 0;
+                    const margem = Number(v) || 0;
+                    const venda = custo > 0 ? (custo * (1 + margem / 100)).toFixed(2) : m.venda;
+                    return { ...m, margem: v, venda };
+                  });
+                }}
+              />
+              <div className="sm:col-span-2">
+                <CampoTexto
+                  label="Valor de Venda *"
+                  type="number"
+                  valor={modalPeca.venda}
+                  onChange={(v) => {
+                    setModalPeca((m) => {
+                      if (!m) return m;
+                      const custo = Number(m.custo) || 0;
+                      const venda = Number(v) || 0;
+                      const margem = custo > 0 ? ((venda - custo) / custo * 100).toFixed(0) : m.margem;
+                      return { ...m, venda: v, margem };
+                    });
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setModalPeca(null)}>Cancelar</Button>
+              <Button onClick={() => void criarPecaNoEstoque()}>Criar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </AppLayout>
   );

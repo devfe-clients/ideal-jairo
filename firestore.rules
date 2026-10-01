@@ -63,7 +63,8 @@ service cloud.firestore {
 
     function validEstoque(data) {
       return hasOnly(data, ['nome', 'codigo', 'marca', 'fornecedor', 'custo', 'precoVenda',
-        'quantidade', 'estoqueMinimo', 'localizacao', 'observacoes', 'criadoEm', 'atualizadoEm'])
+        'quantidade', 'estoqueMinimo', 'localizacao', 'observacoes',
+        'criadoEm', 'atualizadoEm', 'criadoPor', 'atualizadoPor'])
         && data.nome is string && data.nome.size() >= 2 && data.nome.size() <= 120
         && data.custo is number && data.custo >= 0
         && data.precoVenda is number && data.precoVenda >= 0
@@ -73,7 +74,7 @@ service cloud.firestore {
     }
 
     function validCompra(data) {
-      return hasOnly(data, ['ordemServicoId', 'descricao', 'fornecedor', 'quantidade',
+      return hasOnly(data, ['osId', 'descricao', 'fornecedor', 'quantidade',
         'valorPago', 'valorVenda', 'status', 'dataSolicitacao', 'previsaoEntrega', 'nota',
         'paraEstoque', 'criadoEm', 'atualizadoEm', 'criadoPor', 'atualizadoPor'])
         && data.descricao is string && data.descricao.size() >= 2 && data.descricao.size() <= 160
@@ -88,8 +89,8 @@ service cloud.firestore {
     }
 
     function validLancamento(data, tipo) {
-      return hasOnly(data, ['tipo', 'descricao', 'valor', 'vencimento', 'pagoEm',
-        'formaPagamento', 'categoria', 'ordemServicoId', 'clienteId', 'criadoEm',
+      return hasOnly(data, ['tipo', 'descricao', 'valor', 'valorPago', 'vencimento', 'pagoEm',
+        'formaPagamento', 'categoria', 'observacao', 'osId', 'clienteId', 'criadoEm',
         'atualizadoEm', 'criadoPor', 'atualizadoPor'])
         && data.tipo == tipo
         && data.descricao is string && data.descricao.size() >= 2 && data.descricao.size() <= 160
@@ -161,8 +162,15 @@ service cloud.firestore {
       allow create, update: if isAdmin() || isBackoffice();
       allow delete: if isAdmin();
     }
+    // peças do estoque — coleção usada pelo código como "pecas"
+    match /pecas/{id} {
+      allow read: if isBackoffice() || isMecanico();
+      allow create, update: if isAdmin() || isTecnico() || isBackoffice();
+      allow delete: if isAdmin();
+    }
+    // mantém /estoque caso haja dados legados lá
     match /estoque/{id} {
-      allow read: if isAdmin() || isTecnico() || isBackoffice();
+      allow read: if isBackoffice() || isMecanico();
       allow create, update: if isAdmin() || isTecnico() || isBackoffice();
       allow delete: if isAdmin();
     }
@@ -171,6 +179,13 @@ service cloud.firestore {
       allow create, update: if isAdmin() || isTecnico() || isBackoffice();
       allow delete: if isAdmin();
     }
+    // lancamentos na raiz — usados pelo financeiro e OS
+    match /lancamentos/{id} {
+      allow read: if isAdmin() || isAdministrativo() || isBackoffice();
+      allow create, update: if isAdmin() || isAdministrativo() || isBackoffice();
+      allow delete: if isAdmin();
+    }
+    // caminhos aninhados legados — mantém por compatibilidade
     match /financeiro/contas_a_receber/lancamentos/{id} {
       allow read: if isAdmin() || isAdministrativo();
       allow create, update: if isAdmin() || isAdministrativo() || isBackoffice();

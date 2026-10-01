@@ -39,6 +39,31 @@ export const ITENS_VISTORIA = [
   "Buzina",
 ] as const;
 
+export const OPCOES_POR_ITEM: Record<string, readonly string[]> = {
+  "Lataria Frontal":    ["OK", "Arranhado", "Amassado", "Danificado"],
+  "Lataria Traseira":   ["OK", "Arranhado", "Amassado", "Danificado"],
+  "Lat. Esquerda":      ["OK", "Arranhado", "Amassado", "Danificado"],
+  "Lat. Direita":       ["OK", "Arranhado", "Amassado", "Danificado"],
+  "Teto/Capota":        ["OK", "Arranhado", "Amassado", "Danificado"],
+  "Para-brisa":         ["OK", "Trincas", "Danificado"],
+  "Vidro Traseiro":     ["OK", "Trincas", "Danificado"],
+  "Vidros Laterais":    ["OK", "Trincas", "Danificado"],
+  "Pneu D.E.":          ["Bom", "Gasto", "Danificado"],
+  "Pneu D.D.":          ["Bom", "Gasto", "Danificado"],
+  "Pneu T.E.":          ["Bom", "Gasto", "Danificado"],
+  "Pneu T.D.":          ["Bom", "Gasto", "Danificado"],
+  "Palhetas":           ["OK", "Gastas", "Ressecadas", "Danificadas"],
+  "Ar Condicionado":    ["OK", "Não funciona", "Não possui"],
+  "Luzes de Painel":    ["OK", "Com alertas"],
+  "Piscas/Setas":       ["OK", "Avariados", "Faltando"],
+  "Freios":             ["OK", "Desgastados", "Ruins"],
+  "Vazamentos":         ["Não", "Sim"],
+  "Faróis Dianteiros":  ["OK", "Opacos", "Danificados"],
+  "Lanternas Traseiras":["OK", "Opacas", "Danificadas"],
+  "Retrovisores":       ["OK", "Arranhões", "Faltando", "Trincas", "Danificados"],
+  "Buzina":             ["OK", "Com falhas"],
+};
+
 export const NIVEIS_COMBUSTIVEL = [
   "Reserva",
   "1/4 (25%)",
@@ -49,11 +74,28 @@ export const NIVEIS_COMBUSTIVEL = [
 
 export const OPCOES_VISTORIA = [
   "OK",
-  "Arranhões",
-  "Amassados",
+  "Arranhado",
+  "Amassado",
   "Danificado",
-  "Quebrado",
+  "Trincas",
+  "Bom",
+  "Gasto",
+  "Gastas",
+  "Ressecadas",
+  "Danificadas",
+  "Não funciona",
+  "Não possui",
+  "Com alertas",
+  "Avariados",
   "Faltando",
+  "Desgastados",
+  "Ruins",
+  "Sim",
+  "Não",
+  "Opacos",
+  "Opacas",
+  "Arranhões",
+  "Com falhas",
 ] as const;
 
 export const ITENS_INTERNOS = [
