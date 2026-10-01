@@ -77,33 +77,35 @@ function ItemVistoria({
   }, [valorAtual, ehOpcaoPadrao]);
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-32 shrink-0 text-xs text-muted-foreground">{label}</span>
-      <Select
-        value={ehOpcaoPadrao ? valorAtual : valorAtual ? "__custom__" : ""}
-        onValueChange={(v) => {
-          if (v === "__custom__") return;
-          setOutroLocal("");
-          onSelectChange(v);
-        }}
-      >
-        <SelectTrigger className="h-8 flex-1">
-          <SelectValue placeholder="—" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">—</SelectItem>
-          {OPCOES_VISTORIA.map((op) => (
-            <SelectItem key={op} value={op}>{op}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Input
-        className="h-8 w-28 shrink-0"
-        placeholder="Outro..."
-        value={outroLocal}
-        onChange={(e) => setOutroLocal(e.target.value)}
-        onBlur={() => { if (outroLocal !== valorAtual) onOutroBlur(outroLocal); }}
-      />
+    <div className="rounded-md border border-border p-2 space-y-1.5">
+      <span className="block text-xs font-medium text-foreground">{label}</span>
+      <div className="flex gap-2">
+        <Select
+          value={ehOpcaoPadrao ? valorAtual : valorAtual ? "__custom__" : ""}
+          onValueChange={(v) => {
+            if (v === "__custom__") return;
+            setOutroLocal("");
+            onSelectChange(v);
+          }}
+        >
+          <SelectTrigger className="h-8 flex-1">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">—</SelectItem>
+            {OPCOES_VISTORIA.map((op) => (
+              <SelectItem key={op} value={op}>{op}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          className="h-8 w-28 shrink-0"
+          placeholder="Outro..."
+          value={outroLocal}
+          onChange={(e) => setOutroLocal(e.target.value)}
+          onBlur={() => { if (outroLocal !== valorAtual) onOutroBlur(outroLocal); }}
+        />
+      </div>
     </div>
   );
 }
