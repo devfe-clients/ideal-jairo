@@ -890,19 +890,38 @@ async function criarPecaNoEstoque() {
                       alt={`Vistoria ${idx + 1}`}
                       className="h-20 w-full rounded-md object-cover"
                     />
-                    <button
-                      type="button"
-                      className="absolute right-1 top-1 rounded bg-destructive/90 p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() =>
-                        atualizarChecklist(
-                          lado,
-                          "fotos",
-                          c.fotos.filter((_, i) => i !== idx),
-                        )
-                      }
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive-foreground" />
-                    </button>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-md bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                      <a
+                        href={f}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-16 rounded bg-white px-1.5 py-0.5 text-center text-[9px] font-medium text-black hover:bg-gray-100"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Abrir
+                      </a>
+                      <a
+                        href={f}
+                        download={`vistoria-${idx + 1}.webp`}
+                        className="w-16 rounded bg-white px-1.5 py-0.5 text-center text-[9px] font-medium text-black hover:bg-gray-100"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Baixar
+                      </a>
+                      <button
+                        type="button"
+                        className="mt-0.5 rounded bg-destructive/90 p-1"
+                        onClick={() =>
+                          atualizarChecklist(
+                            lado,
+                            "fotos",
+                            c.fotos.filter((_, i) => i !== idx),
+                          )
+                        }
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive-foreground" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
