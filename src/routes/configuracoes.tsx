@@ -297,7 +297,7 @@ function diasDoMes(ano: number, mes: number) {
         || servicosTexto.split("\n").some((s) => s.trim().toLowerCase() === nome.toLowerCase());
       if (!jaExiste) {
         await salvarServico(
-          { id: novoId(), nome, disponivelParaAgendamento: true } as ServicoBase,
+          { id: novoId(), nome, valorPadrao: 0, tempoEstimado: 1, disponivelParaAgendamento: true } as ServicoBase,
           usuario?.uid ?? "sistema",
         );
         setServicosTexto((prev) => (prev ? prev + "\n" + nome : nome));
@@ -315,7 +315,7 @@ function diasDoMes(ano: number, mes: number) {
       || servicosTexto.split("\n").some((s) => s.trim().toLowerCase() === nome.toLowerCase());
     if (!jaExiste) {
       await salvarServico(
-        { id: novoId(), nome, disponivelParaAgendamento: true } as ServicoBase,
+        { id: novoId(), nome, valorPadrao: 0, tempoEstimado: 1, disponivelParaAgendamento: true } as ServicoBase,
         usuario?.uid ?? "sistema",
       );
       setServicosTexto((prev) => (prev ? prev + "\n" + nome : nome));

@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Search } from "lucide-react";
 import { Campo, CampoArea, CampoTexto, Vazio } from "@/components/form-kit";
 import { useColecao, novoId } from "@/lib/db";
 import {
@@ -112,6 +113,8 @@ function ItemVistoria({
   );
 }
 
+// ServicoCombobox removido — lógica movida para inline no mapa de itens
+
 export const Route = createFileRoute("/os_/$id")({
   head: () => ({
     meta: [
@@ -153,6 +156,8 @@ function DetalheOS() {
   const [osState, setOS] = useState<OrdemServico | null>(null);
   const [dialogFinalizar, setDialogFinalizar] = useState(false);
   const [osParaFinalizar, setOsParaFinalizar] = useState<OrdemServico | null>(null);
+  const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
+  const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
 const [modalPeca, setModalPeca] = useState<{
   itemId: string;
   nome: string;
@@ -255,8 +260,8 @@ async function criarPecaNoEstoque() {
     const { EMPRESA } = await import("@/lib/empresa");
     const t = totaisOS(os, os.tipo === "orcamento");
     const itens = os.tipo === "orcamento" ? os.itens.filter((i) => i.aprovado) : os.itens;
-    const servicos = itens.filter((i) => i.tipo === "servico");
-    const pecas = itens.filter((i) => i.tipo === "peca");
+    const servicosImpressao = itens.filter((i) => i.tipo === "servico");
+    const pecasImpressao = itens.filter((i) => i.tipo === "peca");
     const nomeMec = (id?: string) => usuarios.find((m) => m.id === id)?.nome ?? "";
 
     // Converte logo para base64
@@ -367,8 +372,8 @@ async function criarPecaNoEstoque() {
   ${os.reclamacao ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p style="font-weight:bold;text-transform:uppercase">Problema relatado</p><p>${os.reclamacao}</p></div>` : ""}
 
   <!-- Tabelas -->
-  ${tabela("Serviços executados", servicos)}
-  ${tabela("Peças e materiais aplicados", pecas)}
+    ${tabela("Serviços executados", servicosImpressao)}
+    ${tabela("Peças e materiais aplicados", pecasImpressao)}
 
   <!-- Diagnóstico / Observações -->
   ${os.diagnostico || os.observacoes ? `<div style="border:1px solid #000;padding:6px;margin-top:10px">${os.diagnostico ? `<p><strong>Laudo técnico:</strong> ${os.diagnostico}</p>` : ""}${os.observacoes ? `<p><strong>Observações:</strong> ${os.observacoes}</p>` : ""}</div>` : ""}
@@ -599,8 +604,20 @@ async function criarPecaNoEstoque() {
 
   function aplicarValorBase(itemId: string, tipo: "servico" | "peca", chave: string) {
     if (tipo === "servico") {
-      const s = servicos.find((x) => x.id === chave);
-      if (!s) return;
+      const s = servicos.find((x) => x.id === chave || x.nome === chave);
+      if (!s) {
+        setOS((a) =>
+          a
+            ? {
+                ...a,
+                itens: a.itens.map((i) =>
+                  i.id === itemId ? { ...i, descricao: chave, valorUnitario: 0 } : i,
+                ),
+              }
+            : a,
+        );
+        return;
+      }
       setOS((a) =>
         a
           ? {
@@ -1186,25 +1203,66 @@ async function criarPecaNoEstoque() {
                             <td className="px-4 py-2">
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <Select
-                                    value=""
-                                    onValueChange={(v) => aplicarValorBase(i.id, "servico", v)}
-                                  >
-                                    <SelectTrigger className="h-7 w-48 text-xs">
-                                      <SelectValue placeholder="Selecione o serviço" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {servicos.length === 0 ? (
-                                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum serviço cadastrado.</div>
-                                      ) : (
-                                        servicos.map((x) => (
-                                          <SelectItem key={x.id} value={x.id}>
-                                            {x.nome}{x.valorPadrao ? ` — ${brl(x.valorPadrao)}` : ""}
-                                          </SelectItem>
-                                        ))
-                                      )}
-                                    </SelectContent>
-                                  </Select>
+                                  {servicos.length === 0 ? (
+                                    <span className="text-xs text-muted-foreground">Nenhum serviço cadastrado.</span>
+                                  ) : (
+                                    <div className="relative">
+                                      <div className="flex h-7 w-48 items-center gap-1 rounded-md border border-input bg-background px-2 text-xs text-muted-foreground">
+                                        <Search className="h-3 w-3 shrink-0 opacity-50" />
+                                        <input
+                                          className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                                          placeholder="Selecione o serviço"
+                                          value={buscaServico[i.id] ?? i.descricao}
+                                          onChange={(e) => {
+                                            setBuscaServico((prev) => ({ ...prev, [i.id]: e.target.value }));
+                                            setComboServicoAberto((prev) => ({ ...prev, [i.id]: true }));
+                                          }}
+                                          onFocus={() => setComboServicoAberto((prev) => ({ ...prev, [i.id]: true }))}
+                                          onBlur={() => setTimeout(() => setComboServicoAberto((prev) => ({ ...prev, [i.id]: false })), 150)}
+                                        />
+                                      </div>
+                                      {comboServicoAberto[i.id] ? (
+                                        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border bg-popover shadow-md">
+                                          {(() => {
+                                            const termo = (buscaServico[i.id] ?? "").trim().toLowerCase();
+                                            const filtrados = termo
+                                              ? servicos.filter((s) => s.nome.toLowerCase().includes(termo))
+                                              : servicos;
+                                            if (filtrados.length === 0) {
+                                              return (
+                                                <p className="px-3 py-2 text-xs text-muted-foreground">
+                                                  Nenhum serviço encontrado.
+                                                </p>
+                                              );
+                                            }
+                                            return (
+                                              <ul className="max-h-52 overflow-y-auto py-1">
+                                                {filtrados.map((s) => (
+                                                  <li
+                                                    key={s.id}
+                                                    className="flex cursor-pointer items-center justify-between px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
+                                                    onPointerDown={(e) => {
+                                                      e.preventDefault();
+                                                      aplicarValorBase(i.id, "servico", s.nome);
+setBuscaServico((prev) => ({ ...prev, [i.id]: s.nome }));
+setComboServicoAberto((prev) => ({ ...prev, [i.id]: false }));
+                                                    }}
+                                                  >
+                                                    <span className="truncate">{s.nome}</span>
+                                                    {s.valorPadrao ? (
+                                                      <span className="ml-2 shrink-0 text-muted-foreground">
+                                                        {brl(s.valorPadrao)}
+                                                      </span>
+                                                    ) : null}
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            );
+                                          })()}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="ghost"
