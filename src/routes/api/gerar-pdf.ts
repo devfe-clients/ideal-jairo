@@ -35,7 +35,7 @@ export const Route = createFileRoute("/api/gerar-pdf")({
           }
 
           const page = await browser.newPage();
-          await page.setContent(html, { waitUntil: "domcontentloaded" });
+          await page.setContent(html, { waitUntil: "load", timeout: 30000 });
           const pdf = await page.pdf({
             format: "A4",
             margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },

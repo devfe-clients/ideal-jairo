@@ -300,7 +300,7 @@ async function criarPecaNoEstoque() {
         <tbody>${linhas.map(linhaItem).join("")}</tbody>
       </table>`;
 
-    const vistoria = (titulo: string, cv?: typeof os.checklistEntrada) => {
+    const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB64?: string[] }) => {
       if (!cv) return "";
       const marcados = Object.entries(cv.itens).filter(([, val]) => val);
       return `
@@ -309,9 +309,30 @@ async function criarPecaNoEstoque() {
         <p>Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
         ${marcados.length > 0 ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`).join("")}</ul>` : ""}
         ${cv.observacoes ? `<p style="margin-top:4px">Obs.: ${cv.observacoes}</p>` : ""}
-        ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${cv.fotos.map((f, i) => `<img src="${f}" alt="foto ${i+1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
+        ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${(cv._fotosB64 ?? cv.fotos).map((f, i) => `<img src="${f}" alt="foto ${i+1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
       </div>`;
     };
+
+    async function fotoParaB64(url: string): Promise<string> {
+      try {
+        const r = await fetch(url);
+        const blob = await r.blob();
+        return await new Promise<string>((res) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result as string);
+          fr.readAsDataURL(blob);
+        });
+      } catch { return url; }
+    }
+
+    async function resolverFotos(cv: NonNullable<typeof os.checklistEntrada>): Promise<NonNullable<typeof os.checklistEntrada> & { _fotosB64?: string[] }> {
+      if (cv.fotos.length === 0) return cv;
+      const b64s = await Promise.all(cv.fotos.map(fotoParaB64));
+      return { ...cv, _fotosB64: b64s };
+    }
+
+    const checklistEntradaResolvida = os.checklistEntrada ? await resolverFotos(os.checklistEntrada) : undefined;
+    const checklistSaidaResolvida = os.checklistSaida ? await resolverFotos(os.checklistSaida) : undefined;
 
     return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -379,8 +400,8 @@ async function criarPecaNoEstoque() {
   ${os.diagnostico || os.observacoes ? `<div style="border:1px solid #000;padding:6px;margin-top:10px">${os.diagnostico ? `<p><strong>Laudo técnico:</strong> ${os.diagnostico}</p>` : ""}${os.observacoes ? `<p><strong>Observações:</strong> ${os.observacoes}</p>` : ""}</div>` : ""}
 
   <!-- Vistorias -->
-  ${vistoria("Vistoria de entrada", os.checklistEntrada)}
-  ${vistoria("Vistoria de saída", os.checklistSaida)}
+  ${vistoria("Vistoria de entrada", checklistEntradaResolvida)}
+  ${vistoria("Vistoria de saída", checklistSaidaResolvida)}
 
   <!-- Totais -->
   <div style="display:flex;justify-content:flex-end;margin-top:10px">
@@ -428,7 +449,7 @@ async function criarPecaNoEstoque() {
       });
     } catch { /* sem logo */ }
 
-    const blocoVistoria = (titulo: string, cv?: typeof os.checklistEntrada) => {
+    const blocoVistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB64?: string[] }) => {
       if (!cv) return "";
       const marcados = Object.entries(cv.itens).filter(([, val]) => val);
       return `
@@ -437,9 +458,30 @@ async function criarPecaNoEstoque() {
         <p style="margin-top:4px">Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
         ${marcados.length > 0 ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`).join("")}</ul>` : ""}
         ${cv.observacoes ? `<p style="margin-top:4px">Obs.: ${cv.observacoes}</p>` : ""}
-        ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${cv.fotos.map((f, i) => `<img src="${f}" alt="foto ${i + 1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
+        ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${(cv._fotosB64 ?? cv.fotos).map((f, i) => `<img src="${f}" alt="foto ${i + 1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
       </div>`;
     };
+
+    async function fotoParaB64Vistoria(url: string): Promise<string> {
+      try {
+        const r = await fetch(url);
+        const blob = await r.blob();
+        return await new Promise<string>((res) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result as string);
+          fr.readAsDataURL(blob);
+        });
+      } catch { return url; }
+    }
+
+    async function resolverFotosVistoria(cv: NonNullable<typeof os.checklistEntrada>): Promise<NonNullable<typeof os.checklistEntrada> & { _fotosB64?: string[] }> {
+      if (cv.fotos.length === 0) return cv;
+      const b64s = await Promise.all(cv.fotos.map(fotoParaB64Vistoria));
+      return { ...cv, _fotosB64: b64s };
+    }
+
+    const entradaResolvida = os.checklistEntrada ? await resolverFotosVistoria(os.checklistEntrada) : undefined;
+    const saidaResolvida = os.checklistSaida ? await resolverFotosVistoria(os.checklistSaida) : undefined;
 
     const temVistoria = os.checklistEntrada || os.checklistSaida;
     if (!temVistoria) return "";
@@ -478,8 +520,8 @@ async function criarPecaNoEstoque() {
     </div>
   </div>
 
-  ${blocoVistoria("Vistoria de entrada", os.checklistEntrada)}
-  ${blocoVistoria("Vistoria de saída (entrega)", os.checklistSaida)}
+  ${blocoVistoria("Vistoria de entrada", entradaResolvida)}
+  ${blocoVistoria("Vistoria de saída (entrega)", saidaResolvida)}
 
   <p style="text-align:center;font-size:9px;margin-top:16px">${EMPRESA.nome} — documento gerado em ${new Date().toLocaleString("pt-BR")}</p>
 </div>
@@ -1203,66 +1245,22 @@ async function criarPecaNoEstoque() {
                             <td className="px-4 py-2">
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  {servicos.length === 0 ? (
-                                    <span className="text-xs text-muted-foreground">Nenhum serviço cadastrado.</span>
-                                  ) : (
-                                    <div className="relative">
-                                      <div className="flex h-7 w-48 items-center gap-1 rounded-md border border-input bg-background px-2 text-xs text-muted-foreground">
-                                        <Search className="h-3 w-3 shrink-0 opacity-50" />
-                                        <input
-                                          className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-                                          placeholder="Selecione o serviço"
-                                          value={buscaServico[i.id] ?? i.descricao}
-                                          onChange={(e) => {
-                                            setBuscaServico((prev) => ({ ...prev, [i.id]: e.target.value }));
-                                            setComboServicoAberto((prev) => ({ ...prev, [i.id]: true }));
-                                          }}
-                                          onFocus={() => setComboServicoAberto((prev) => ({ ...prev, [i.id]: true }))}
-                                          onBlur={() => setTimeout(() => setComboServicoAberto((prev) => ({ ...prev, [i.id]: false })), 150)}
-                                        />
-                                      </div>
-                                      {comboServicoAberto[i.id] ? (
-                                        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border bg-popover shadow-md">
-                                          {(() => {
-                                            const termo = (buscaServico[i.id] ?? "").trim().toLowerCase();
-                                            const filtrados = termo
-                                              ? servicos.filter((s) => s.nome.toLowerCase().includes(termo))
-                                              : servicos;
-                                            if (filtrados.length === 0) {
-                                              return (
-                                                <p className="px-3 py-2 text-xs text-muted-foreground">
-                                                  Nenhum serviço encontrado.
-                                                </p>
-                                              );
-                                            }
-                                            return (
-                                              <ul className="max-h-52 overflow-y-auto py-1">
-                                                {filtrados.map((s) => (
-                                                  <li
-                                                    key={s.id}
-                                                    className="flex cursor-pointer items-center justify-between px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
-                                                    onPointerDown={(e) => {
-                                                      e.preventDefault();
-                                                      aplicarValorBase(i.id, "servico", s.nome);
-setBuscaServico((prev) => ({ ...prev, [i.id]: s.nome }));
-setComboServicoAberto((prev) => ({ ...prev, [i.id]: false }));
-                                                    }}
-                                                  >
-                                                    <span className="truncate">{s.nome}</span>
-                                                    {s.valorPadrao ? (
-                                                      <span className="ml-2 shrink-0 text-muted-foreground">
-                                                        {brl(s.valorPadrao)}
-                                                      </span>
-                                                    ) : null}
-                                                  </li>
-                                                ))}
-                                              </ul>
-                                            );
-                                          })()}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                  )}
+                                  <datalist id={`servicos-${i.id}`}>
+                                    {servicos.map((s) => (
+                                      <option key={s.id} value={s.nome} />
+                                    ))}
+                                  </datalist>
+                                  <input
+                                    list={`servicos-${i.id}`}
+                                    className="flex-1 min-w-0 h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                                    placeholder="Selecione ou descreva o serviço..."
+                                    value={i.descricao}
+                                    onChange={(e) => {
+                                      atualizarItem(i.id, "descricao", e.target.value);
+                                      const s = servicos.find((x) => x.nome === e.target.value);
+                                      if (s) aplicarValorBase(i.id, "servico", s.nome);
+                                    }}
+                                  />
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -1670,12 +1668,29 @@ setComboServicoAberto((prev) => ({ ...prev, [i.id]: false }));
             {(() => {
               const venda = Number(modalNovoServico.valor) || 0;
               const desconto = Number(modalNovoServico.desconto) || 0;
+              const custo = Number(modalNovoServico.custo) || 0;
               const total = venda - desconto;
-              if (total <= 0) return null;
+              const margemPct = custo > 0 ? ((venda - custo) / custo) * 100 : 0;
+              const qualidade =
+                margemPct >= 60
+                  ? { label: "▲ Boa", cor: "text-success" }
+                  : margemPct >= 30
+                  ? { label: "▶ Razoável", cor: "text-warning" }
+                  : { label: "▼ Baixa", cor: "text-destructive" };
               return (
-                <div className="rounded-md bg-muted px-3 py-2 text-sm flex justify-between">
-                  <span className="text-muted-foreground">Valor total do item</span>
-                  <strong className="text-primary">{brl(total)}</strong>
+                <div className="space-y-2">
+                  {total > 0 ? (
+                    <div className="rounded-md bg-muted px-3 py-2 text-sm flex justify-between">
+                      <span className="text-muted-foreground">Valor total do item</span>
+                      <strong className="text-primary">{brl(total)}</strong>
+                    </div>
+                  ) : null}
+                  {custo > 0 && venda > 0 ? (
+                    <div className="rounded-md bg-muted px-3 py-2 text-sm flex justify-between">
+                      <span className="text-muted-foreground">Margem sobre custo</span>
+                      <span className={`font-semibold ${qualidade.cor}`}>{margemPct.toFixed(0)}% {qualidade.label}</span>
+                    </div>
+                  ) : null}
                 </div>
               );
             })()}
@@ -1750,6 +1765,24 @@ setComboServicoAberto((prev) => ({ ...prev, [i.id]: false }));
                 />
               </div>
             </div>
+            {(() => {
+              const custo = Number(modalPeca.custo) || 0;
+              const venda = Number(modalPeca.venda) || 0;
+              if (custo <= 0 || venda <= 0) return null;
+              const margemPct = ((venda - custo) / custo) * 100;
+              const qualidade =
+                margemPct >= 60
+                  ? { label: "▲ Boa", cor: "text-success" }
+                  : margemPct >= 30
+                  ? { label: "▶ Razoável", cor: "text-warning" }
+                  : { label: "▼ Baixa", cor: "text-destructive" };
+              return (
+                <div className="rounded-md bg-muted px-3 py-2 text-sm flex justify-between">
+                  <span className="text-muted-foreground">Margem sobre custo</span>
+                  <span className={`font-semibold ${qualidade.cor}`}>{margemPct.toFixed(0)}% {qualidade.label}</span>
+                </div>
+              );
+            })()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setModalPeca(null)}>Cancelar</Button>
               <Button onClick={() => void criarPecaNoEstoque()}>Criar</Button>

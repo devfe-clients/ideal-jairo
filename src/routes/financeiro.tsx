@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Check, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Campo, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useColecao, novoId } from "@/lib/db";
 import { lancamentoSchema, type Cliente, type Lancamento, type OrdemServico } from "@/lib/schemas";
-import { brl, dataBR } from "@/lib/calc";
+import { brl, dataBR, linkWhatsApp } from "@/lib/calc";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/financeiro")({
@@ -261,6 +261,21 @@ function FinanceiroPage() {
     return "text-muted-foreground";
   };
 
+  function linkLembrete(l: Lancamento, cliente?: Cliente) {
+    if (!cliente?.telefone) return null;
+    const saldo = l.valor - (l.valorPago ?? 0);
+    const msg = [
+      `Olá ${cliente.nome.split(" ")[0]}! Oficina Ideal Jairo.`,
+      `Passando para lembrar que você possui um débito em aberto conosco.`,
+      l.osId ? `Referência: ${ordens.find((o) => o.id === l.osId)?.numero ?? l.descricao}` : `Referência: ${l.descricao}`,
+      `Valor: R$ ${saldo.toFixed(2).replace(".", ",")}`,
+      `Vencimento: ${dataBR(l.vencimento)}`,
+      ``,
+      `Qualquer dúvida, estamos à disposição. 😊`,
+    ].join("\n");
+    return linkWhatsApp(cliente.telefone, msg);
+  }
+
   const Indicador = ({ titulo, valor, cor }: { titulo: string; valor: string; cor: string }) => (
     <Card>
       <CardContent className="p-4">
@@ -276,12 +291,61 @@ function FinanceiroPage() {
       descricao="Contas a receber e a pagar, geradas automaticamente pelas OS e compras."
       acoes={
         <>
-          <Input
-            type="month"
-            className="w-40"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-          />
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 px-2"
+              onClick={() => {
+                const partes = mes.split("-");
+                const ano = Number(partes[0]) || new Date().getFullYear();
+                const m = Number(partes[1]) || new Date().getMonth() + 1;
+                const d = new Date(ano, m - 2);
+                setMes(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+              }}
+            >
+              ‹
+            </Button>
+            <Input
+              type="month"
+              className="w-36"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 px-2"
+              onClick={() => {
+                const partes = mes.split("-");
+                const ano = Number(partes[0]) || new Date().getFullYear();
+                const m = Number(partes[1]) || new Date().getMonth() + 1;
+                const d = new Date(ano, m);
+                setMes(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+              }}
+            >
+              ›
+            </Button>
+          </div>
+          <select
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value=""
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const d = new Date();
+              d.setMonth(d.getMonth() - Number(e.target.value));
+              setMes(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+              e.target.value = "";
+            }}
+          >
+            <option value="">Ir para...</option>
+            <option value="0">Mês atual</option>
+            <option value="1">Mês passado</option>
+            <option value="2">2 meses atrás</option>
+            <option value="3">3 meses atrás</option>
+            <option value="6">6 meses atrás</option>
+            <option value="12">1 ano atrás</option>
+          </select>
           <select
             className="h-9 rounded-md border border-input bg-background px-2 text-sm"
             value={filtroTipo}
@@ -444,6 +508,16 @@ function FinanceiroPage() {
                       </Button>
                     </div>
                   )}
+                  {(() => {
+                    const href = l.tipo === "receber" && st !== "Pago" ? linkLembrete(l, cliente) : null;
+                    return href ? (
+                      <a href={href} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="outline" className="text-green-600" title="Enviar lembrete via WhatsApp">
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      </a>
+                    ) : null;
+                  })()}
                   <Button size="sm" variant="outline" onClick={() => abrirEdicao(l)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
