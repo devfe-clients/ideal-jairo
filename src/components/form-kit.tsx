@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState, useEffect, type ReactNode } from "react";
 import type { z } from "zod";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -133,6 +133,105 @@ export function CampoArea({
         className="resize-none"
       />
     </Campo>
+  );
+}
+
+export function CampoMoeda({
+  label,
+  valor,
+  onChange,
+  erro,
+  className,
+  dica,
+  disabled,
+}: {
+  label: string;
+  valor: number;
+  onChange: (v: number) => void;
+  erro?: string | undefined;
+  className?: string | undefined;
+  dica?: string | undefined;
+  disabled?: boolean | undefined;
+}) {
+  const [texto, setTexto] = useState(
+    valor > 0 ? valor.toFixed(2).replace(".", ",") : "",
+  );
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/\D/g, "");
+    const num = Number(raw) / 100;
+    setTexto(raw === "" ? "" : num.toFixed(2).replace(".", ","));
+    onChange(num);
+  }
+
+  function handleBlur() {
+    const num = Number(texto.replace(",", ".")) || 0;
+    setTexto(num > 0 ? num.toFixed(2).replace(".", ",") : "");
+    onChange(num);
+  }
+
+  return (
+    <Campo label={label} erro={erro} className={className} dica={dica}>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          R$
+        </span>
+        <Input
+          type="text"
+          inputMode="numeric"
+          className="pl-9"
+          value={texto}
+          placeholder="0,00"
+          disabled={disabled}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          aria-invalid={Boolean(erro)}
+        />
+      </div>
+    </Campo>
+  );
+}
+
+export function MoneyInput({
+  value,
+  onChange,
+  className,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [rawText, setRawText] = useState("");
+
+  const displayValue = focused
+    ? rawText
+    : value > 0 ? value.toFixed(2).replace(".", ",") : "";
+
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+        R$
+      </span>
+      <Input
+        type="text"
+        inputMode="decimal"
+        className={cn("pl-6 text-right", className)}
+        value={displayValue}
+        placeholder="0,00"
+        onChange={(e) => setRawText(e.target.value)}
+        onFocus={(e) => {
+          setFocused(true);
+          setRawText(value > 0 ? value.toFixed(2).replace(".", ",") : "");
+          e.target.select();
+        }}
+        onBlur={() => {
+          setFocused(false);
+          const cleaned = rawText.replace(/\./g, "").replace(",", ".");
+          onChange(parseFloat(cleaned) || 0);
+        }}
+      />
+    </div>
   );
 }
 

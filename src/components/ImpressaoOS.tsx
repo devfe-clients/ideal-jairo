@@ -66,6 +66,11 @@ export function ImpressaoOS({
   const Vistoria = ({ titulo, c }: { titulo: string; c?: Checklist | undefined }) => {
     if (!c) return null;
     const marcados = Object.entries(c.itens).filter(([, v]) => v);
+    const internos = Object.entries(c.itensInternos).filter(([, v]) => v);
+    const todosItens = [
+      ...marcados.map(([k, v]) => ({ label: k, valor: String(v) })),
+      ...internos.map(([k]) => ({ label: k, valor: "OK" })),
+    ];
     return (
       <div className="mt-3 border border-black p-2 text-[11px]">
         <p className="font-bold uppercase">
@@ -79,14 +84,27 @@ export function ImpressaoOS({
         <p>
           Hodômetro: {c.hodometro.toLocaleString("pt-BR")} km · Combustível: {c.combustivel}
         </p>
-        {marcados.length > 0 ? (
-          <ul className="mt-1 grid grid-cols-2 gap-x-4 sm:grid-cols-3">
-            {marcados.map(([k, v]) => (
-              <li key={k}>
-                <strong>{k}:</strong> {v}
-              </li>
-            ))}
-          </ul>
+        {todosItens.length > 0 ? (
+          <table className="mt-2 w-full border-collapse text-[10px]">
+            <thead>
+              <tr>
+                <th className="border border-black bg-gray-100 px-2 py-0.5 text-left font-semibold print:bg-gray-100">
+                  Item inspecionado
+                </th>
+                <th className="w-32 border border-black bg-gray-100 px-2 py-0.5 text-left font-semibold print:bg-gray-100">
+                  Condição
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {todosItens.map(({ label, valor }) => (
+                <tr key={label}>
+                  <td className="border border-black px-2 py-0.5">{label}</td>
+                  <td className="border border-black px-2 py-0.5">{valor}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : null}
         {c.observacoes ? <p className="mt-1">Obs.: {c.observacoes}</p> : null}
         {c.fotos.length > 0 ? (

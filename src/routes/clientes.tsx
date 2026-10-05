@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { MessageCircle, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -87,6 +87,8 @@ function Clientes() {
     setAberto(true);
   }
 
+  const navigate = useNavigate();
+
   async function submeter() {
     const dados = form.validar();
     if (!dados) {
@@ -99,8 +101,14 @@ function Clientes() {
       criadoEm: editando?.criadoEm ?? new Date().toISOString(),
     } as Cliente;
     await salvar(registro, usuario?.uid ?? "sistema");
-    toast.success(editando ? "Cliente atualizado." : "Cliente cadastrado.");
-    setAberto(false);
+    if (editando) {
+      toast.success("Cliente atualizado.");
+      setAberto(false);
+    } else {
+      toast.success("Cliente cadastrado.");
+      setAberto(false);
+      await navigate({ to: "/clientes/$id", params: { id: registro.id } });
+    }
   }
 
   return (

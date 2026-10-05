@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Car, Pencil, Plus, Search, ScanLine } from "lucide-react";
 import { toast } from "sonner";
@@ -93,6 +93,8 @@ function Veiculos() {
     setAberto(true);
   }
 
+  const navigate = useNavigate();
+
   async function submeter() {
     const dados = form.validar();
     if (!dados) {
@@ -105,8 +107,13 @@ function Veiculos() {
       criadoEm: editando?.criadoEm ?? new Date().toISOString(),
     } as Veiculo;
     await salvar(registro, usuario?.nome ?? "sistema");
-    toast.success(editando ? "Veículo atualizado." : "Veículo cadastrado.");
     setAberto(false);
+    if (!editando && clienteFiltro) {
+      toast.success("Veículo cadastrado.");
+      await navigate({ to: "/clientes/$id", params: { id: clienteFiltro } });
+    } else {
+      toast.success(editando ? "Veículo atualizado." : "Veículo cadastrado.");
+    }
   }
 
   function consultarPlaca() {
@@ -241,18 +248,44 @@ function Veiculos() {
                 <ScanLine className="mr-1 h-4 w-4" /> Consultar
               </Button>
             </div>
-            <CampoTexto
-              label="Marca"
-              valor={String(form.valores["marca"] ?? "")}
-              erro={form.erros["marca"]}
-              onChange={(v) => form.set("marca", v)}
-            />
-            <CampoTexto
-              label="Modelo"
-              valor={String(form.valores["modelo"] ?? "")}
-              erro={form.erros["modelo"]}
-              onChange={(v) => form.set("modelo", v)}
-            />
+            <datalist id="marcas-lista">
+              {[...new Set(veiculos.map((v) => v.marca).filter(Boolean))].map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+            <datalist id="modelos-lista">
+              {[...new Set(veiculos.map((v) => v.modelo).filter(Boolean))].map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+            <datalist id="cores-lista">
+              {[...new Set(veiculos.map((v) => v.cor ?? "").filter(Boolean))].map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            <datalist id="motores-lista">
+              {[...new Set(veiculos.map((v) => v.motor ?? "").filter(Boolean))].map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+            <Campo label="Marca" erro={form.erros["marca"]}>
+              <input
+                list="marcas-lista"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Ex: Ford, Fiat, VW..."
+                value={String(form.valores["marca"] ?? "")}
+                onChange={(e) => form.set("marca", e.target.value)}
+              />
+            </Campo>
+            <Campo label="Modelo" erro={form.erros["modelo"]}>
+              <input
+                list="modelos-lista"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Ex: Fiesta, Gol, Creta..."
+                value={String(form.valores["modelo"] ?? "")}
+                onChange={(e) => form.set("modelo", e.target.value)}
+              />
+            </Campo>
             <CampoTexto
               label="Ano"
               type="number"
@@ -260,18 +293,24 @@ function Veiculos() {
               erro={form.erros["ano"]}
               onChange={(v) => form.set("ano", v)}
             />
-            <CampoTexto
-              label="Cor"
-              valor={String(form.valores["cor"] ?? "")}
-              erro={form.erros["cor"]}
-              onChange={(v) => form.set("cor", v)}
-            />
-            <CampoTexto
-              label="Motor"
-              valor={String(form.valores["motor"] ?? "")}
-              erro={form.erros["motor"]}
-              onChange={(v) => form.set("motor", v)}
-            />
+            <Campo label="Cor" erro={form.erros["cor"]}>
+              <input
+                list="cores-lista"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Ex: Prata, Branco, Preto..."
+                value={String(form.valores["cor"] ?? "")}
+                onChange={(e) => form.set("cor", e.target.value)}
+              />
+            </Campo>
+            <Campo label="Motor" erro={form.erros["motor"]}>
+              <input
+                list="motores-lista"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Ex: 1.0, 1.6, 2.0..."
+                value={String(form.valores["motor"] ?? "")}
+                onChange={(e) => form.set("motor", e.target.value)}
+              />
+            </Campo>
             <CampoTexto
               label="Chassi"
               valor={String(form.valores["chassi"] ?? "")}

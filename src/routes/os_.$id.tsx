@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { Campo, CampoArea, CampoTexto, Vazio } from "@/components/form-kit";
+import { Campo, CampoArea, CampoTexto, MoneyInput, Vazio } from "@/components/form-kit";
 import { useColecao, novoId } from "@/lib/db";
 import {
   itemSchema,
@@ -452,11 +452,16 @@ async function criarPecaNoEstoque() {
     const blocoVistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB64?: string[] }) => {
       if (!cv) return "";
       const marcados = Object.entries(cv.itens).filter(([, val]) => val);
+      const internos = Object.entries(cv.itensInternos ?? {}).filter(([, val]) => val);
+      const todosItens = [
+        ...marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`),
+        ...internos.map(([k]) => `<li><strong>${k}:</strong> OK</li>`),
+      ].join("");
       return `
       <div style="margin-top:12px;border:1px solid #000;padding:8px;font-size:11px">
         <p style="font-weight:bold;text-transform:uppercase">${titulo}${cv.dataHora ? ` <span style="font-weight:normal;font-size:10px;text-transform:none">— registrada em ${cv.dataHora}</span>` : ""}</p>
         <p style="margin-top:4px">Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
-        ${marcados.length > 0 ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${marcados.map(([k, val]) => `<li><strong>${k}:</strong> ${val}</li>`).join("")}</ul>` : ""}
+        ${todosItens ? `<ul style="margin-top:4px;columns:2;list-style:none;padding:0">${todosItens}</ul>` : ""}
         ${cv.observacoes ? `<p style="margin-top:4px">Obs.: ${cv.observacoes}</p>` : ""}
         ${cv.fotos.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${(cv._fotosB64 ?? cv.fotos).map((f, i) => `<img src="${f}" alt="foto ${i + 1}" style="width:100%;height:80px;object-fit:cover;border-radius:4px">`).join("")}</div>` : ""}
       </div>`;
@@ -1308,22 +1313,18 @@ async function criarPecaNoEstoque() {
                               />
                             </td>
                             <td className="px-4 py-2">
-                              <Input
-                                type="number"
-                                className="h-8 w-28 text-right"
-                                value={i.valorUnitario === 0 ? "" : i.valorUnitario}
-                                placeholder="0,00"
-                                onChange={(e) => atualizarItem(i.id, "valorUnitario", Number(e.target.value) || 0)}
-                              />
+<MoneyInput
+  className="h-8 w-28"
+  value={i.valorUnitario}
+  onChange={(v) => atualizarItem(i.id, "valorUnitario", v)}
+/>
                             </td>
                             <td className="px-4 py-2">
-                              <Input
-                                type="number"
-                                className="h-8 w-24 text-right"
-                                value={i.desconto === 0 ? "" : i.desconto}
-                                placeholder="0,00"
-                                onChange={(e) => atualizarItem(i.id, "desconto", Number(e.target.value) || 0)}
-                              />
+<MoneyInput
+  className="h-8 w-24"
+  value={i.desconto}
+  onChange={(v) => atualizarItem(i.id, "desconto", v)}
+/>
                             </td>
                             <td className="px-4 py-2 text-right font-medium">
                               {brl(itemTotal(i))}
@@ -1456,13 +1457,11 @@ async function criarPecaNoEstoque() {
                                   {pode("ver-margem") ? (
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <span>Custo:</span>
-                                      <Input
-                                        type="number"
-                                        className="h-6 w-20 text-xs"
-                                        value={i.custoUnitario === 0 ? "" : i.custoUnitario}
-                                        placeholder="0,00"
-                                        onChange={(e) => atualizarItem(i.id, "custoUnitario", Number(e.target.value) || 0)}
-                                      />
+<MoneyInput
+  className="h-6 w-20 text-xs"
+  value={i.custoUnitario}
+  onChange={(v) => atualizarItem(i.id, "custoUnitario", v)}
+/>
                                     </div>
                                   ) : null}
                                 </div>
@@ -1547,13 +1546,11 @@ async function criarPecaNoEstoque() {
               </div>
               <div className="mt-3 flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Desconto geral:</span>
-                <Input
-                  type="number"
-                  className="h-8 w-32"
-                  value={os.descontoGeral === 0 ? "" : os.descontoGeral}
-                  placeholder="0,00"
-                  onChange={(e) => atualizar("descontoGeral", Number(e.target.value) || 0)}
-                />
+<MoneyInput
+  className="h-8 w-32"
+  value={os.descontoGeral}
+  onChange={(v) => atualizar("descontoGeral", v)}
+/>
               </div>
               {pode("ver-margem") ? (
                 <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
@@ -1646,24 +1643,24 @@ async function criarPecaNoEstoque() {
                   onChange={(v) => setModalNovoServico((m) => m ? { ...m, nome: v } : m)}
                 />
               </div>
-              <CampoTexto
-                label="Preço de Venda *"
-                type="number"
-                valor={modalNovoServico.valor}
-                onChange={(v) => setModalNovoServico((m) => m ? { ...m, valor: v } : m)}
-              />
-              <CampoTexto
-                label="Custo Estimado"
-                type="number"
-                valor={modalNovoServico.custo}
-                onChange={(v) => setModalNovoServico((m) => m ? { ...m, custo: v } : m)}
-              />
-              <CampoTexto
-                label="Desconto"
-                type="number"
-                valor={modalNovoServico.desconto}
-                onChange={(v) => setModalNovoServico((m) => m ? { ...m, desconto: v } : m)}
-              />
+<Campo label="Preço de Venda *">
+  <MoneyInput
+    value={Number(modalNovoServico.valor) || 0}
+    onChange={(v) => setModalNovoServico((m) => m ? { ...m, valor: String(v) } : m)}
+  />
+</Campo>
+<Campo label="Custo Estimado">
+  <MoneyInput
+    value={Number(modalNovoServico.custo) || 0}
+    onChange={(v) => setModalNovoServico((m) => m ? { ...m, custo: String(v) } : m)}
+  />
+</Campo>
+<Campo label="Desconto">
+  <MoneyInput
+    value={Number(modalNovoServico.desconto) || 0}
+    onChange={(v) => setModalNovoServico((m) => m ? { ...m, desconto: String(v) } : m)}
+  />
+</Campo>
             </div>
             {(() => {
               const venda = Number(modalNovoServico.valor) || 0;

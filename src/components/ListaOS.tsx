@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Check, ChevronsUpDown, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,8 +45,9 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
   const { dados: ordens, salvar, remover } = useColecao<OrdemServico>("ordens");
   const { dados: clientes } = useColecao<Cliente>("clientes");
   const { dados: veiculos } = useColecao<Veiculo>("veiculos");
-  const { usuario, pode } = useAuth();
-  const [texto, setTexto] = useState("");
+const { usuario, pode } = useAuth();
+const navigate = useNavigate();
+const [texto, setTexto] = useState("");
   const [status, setStatus] = useState("aberto");
   const [aberto, setAberto] = useState(false);
   const [novoCliente, setNovoCliente] = useState("");
@@ -96,6 +97,7 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
     setAberto(false);
     setNovoCliente("");
     setNovoVeiculo("");
+    await navigate({ to: "/os/$id", params: { id: nova.id } });
   }
 
   return (
