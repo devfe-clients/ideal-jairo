@@ -148,7 +148,20 @@ const [texto, setTexto] = useState("");
                         <p className="font-display font-bold text-primary">{o.numero}</p>
                         <Badge variant="secondary">{o.status}</Badge>
                       </div>
-                      <p className="truncate text-sm font-medium">{c?.nome ?? "Sem cliente"}</p>
+                      {c ? (
+                        <button
+                          className="truncate text-left text-sm font-medium hover:underline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void navigate({ to: "/clientes/$id", params: { id: c.id } });
+                          }}
+                        >
+                          {c.nome}
+                        </button>
+                      ) : (
+                        <p className="truncate text-sm font-medium">Sem cliente</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {v ? `${v.placa} · ${v.marca} ${v.modelo}` : "Sem veículo"}
                       </p>

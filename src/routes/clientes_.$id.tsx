@@ -16,6 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CampoArea, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
 import { useColecao, novoId } from "@/lib/db";
 import { clienteSchema, type Cliente, type OrdemServico, type Veiculo } from "@/lib/schemas";
@@ -51,8 +58,10 @@ function DetalheCliente() {
   const { dados: veiculos } = useColecao<Veiculo>("veiculos");
   const { dados: ordens, salvar: salvarOS } = useColecao<OrdemServico>("ordens");
   const { usuario, pode } = useAuth();
-  const [editando, setEditando] = useState(false);
-  const form = useFormularioZod(clienteSchema, vazio);
+const [editando, setEditando] = useState(false);
+const [dialogVeiculo, setDialogVeiculo] = useState<{ tipo: "os" | "orcamento" } | null>(null);
+const [veiculoSelecionado, setVeiculoSelecionado] = useState("");
+const form = useFormularioZod(clienteSchema, vazio);
 
   const cliente = clientes.find((c) => c.id === id);
   const meusVeiculos = veiculos.filter((v) => v.clienteId === id);
@@ -60,6 +69,13 @@ function DetalheCliente() {
   const meusOrcamentos = ordens.filter((o) => o.clienteId === id && o.tipo === "orcamento");
 
   if (!cliente) {
+    if (clientes.length === 0) {
+      return (
+        <AppLayout titulo="Clientes">
+          <Vazio mensagem="Carregando..." />
+        </AppLayout>
+      );
+    }
     return (
       <AppLayout titulo="Cliente não encontrado">
         <Vazio mensagem="Este cliente não existe ou foi removido." />
@@ -369,12 +385,58 @@ function DetalheCliente() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!dialogVeiculo} onOpenChange={(v) => { if (!v) setDialogVeiculo(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Selecione o veículo</DialogTitle>
+          </DialogHeader>
+          <Select value={veiculoSelecionado} onValueChange={setVeiculoSelecionado}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o veículo" />
+            </SelectTrigger>
+            <SelectContent>
+              {meusVeiculos.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.placa} · {v.marca} {v.modelo} ({v.ano})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogVeiculo(null)}>Cancelar</Button>
+            <Button
+              onClick={async () => {
+                const v = meusVeiculos.find((x) => x.id === veiculoSelecionado);
+                setDialogVeiculo(null);
+                await confirmarCriarOS(dialogVeiculo!.tipo, veiculoSelecionado, v?.km ?? 0);
+              }}
+            >
+              Criar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 
   async function criarOS(tipo: "os" | "orcamento") {
+    if (meusVeiculos.length === 0) {
+      toast.error("Cadastre um veículo para este cliente antes de abrir uma OS.");
+      return;
+    }
+    const primeiro = meusVeiculos[0];
+    if (meusVeiculos.length === 1 && primeiro) {
+      await confirmarCriarOS(tipo, primeiro.id, primeiro.km);
+      return;
+    }
+    setVeiculoSelecionado(primeiro?.id ?? "");
+    setDialogVeiculo({ tipo });
+  }
+
+  async function confirmarCriarOS(tipo: "os" | "orcamento", veiculoId: string, km: number) {
     const { novaOrdem } = await import("@/lib/os-helpers");
-    const ordem = novaOrdem(ordens, tipo, id, "", 0, usuario?.uid ?? "sistema");
+    const ordem = novaOrdem(ordens, tipo, id, veiculoId, km, usuario?.uid ?? "sistema");
     await salvarOS(ordem, usuario?.uid ?? "sistema");
     toast.success(tipo === "os" ? "OS criada." : "Orçamento criado.");
     await navigate({ to: "/os/$id", params: { id: ordem.id } });

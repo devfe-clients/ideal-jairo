@@ -204,9 +204,8 @@ export function MoneyInput({
   const [focused, setFocused] = useState(false);
   const [rawText, setRawText] = useState("");
 
-  const displayValue = focused
-    ? rawText
-    : value > 0 ? value.toFixed(2).replace(".", ",") : "";
+  const formatted = value.toFixed(2).replace(".", ",");
+  const displayValue = focused ? rawText : formatted;
 
   return (
     <div className="relative">
@@ -222,7 +221,7 @@ export function MoneyInput({
         onChange={(e) => setRawText(e.target.value)}
         onFocus={(e) => {
           setFocused(true);
-          setRawText(value > 0 ? value.toFixed(2).replace(".", ",") : "");
+          setRawText(formatted);
           e.target.select();
         }}
         onBlur={() => {

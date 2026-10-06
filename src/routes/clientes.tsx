@@ -168,6 +168,11 @@ function Clientes() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to="/clientes/$id" params={{ id: c.id }}>
+                        Ficha
+                      </Link>
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => abrirEdicao(c)}>
                       <Pencil className="mr-1 h-3.5 w-3.5" /> Editar
                     </Button>
