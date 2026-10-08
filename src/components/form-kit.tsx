@@ -224,11 +224,13 @@ export function MoneyInput({
           setRawText(formatted);
           e.target.select();
         }}
-        onBlur={() => {
-          setFocused(false);
-          const cleaned = rawText.replace(/\./g, "").replace(",", ".");
-          onChange(parseFloat(cleaned) || 0);
-        }}
+onBlur={() => {
+  setFocused(false);
+  const cleaned = rawText.replace(/\./g, "").replace(",", ".");
+  const num = parseFloat(cleaned) || 0;
+  setRawText(num.toFixed(2).replace(".", ","));
+  onChange(num);
+}}
       />
     </div>
   );
