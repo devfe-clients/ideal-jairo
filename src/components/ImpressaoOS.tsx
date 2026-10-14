@@ -67,6 +67,13 @@ export function ImpressaoOS({
     if (!c) return null;
     const marcados = Object.entries(c.itens).filter(([, v]) => v);
     const internos = Object.entries(c.itensInternos).filter(([, v]) => v);
+    const temConteudo =
+      marcados.length > 0 ||
+      internos.length > 0 ||
+      (c.fotos?.length ?? 0) > 0 ||
+      !!c.observacoes ||
+      !!c.dataHora;
+    if (!temConteudo) return null;
     const todosItens = [
       ...marcados.map(([k, v]) => ({ label: k, valor: String(v) })),
       ...internos.map(([k]) => ({ label: k, valor: "OK" })),
