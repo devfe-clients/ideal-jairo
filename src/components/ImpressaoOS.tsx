@@ -63,22 +63,21 @@ export function ImpressaoOS({
       </table>
     );
 
-  const Vistoria = ({ titulo, c }: { titulo: string; c?: Checklist | undefined }) => {
+ const Vistoria = ({ titulo, c }: { titulo: string; c?: Checklist | undefined }) => {
     if (!c) return null;
-    const marcados = Object.entries(c.itens).filter(([, v]) => v);
-    const internos = Object.entries(c.itensInternos).filter(([, v]) => v);
-    const temConteudo =
-      marcados.length > 0 ||
-      internos.length > 0 ||
-      (c.fotos?.length ?? 0) > 0 ||
-      !!c.observacoes ||
-      !!c.dataHora;
-    if (!temConteudo) return null;
-    const todosItens = [
-      ...marcados.map(([k, v]) => ({ label: k, valor: String(v) })),
-      ...internos.map(([k]) => ({ label: k, valor: "OK" })),
-    ];
-    return (
+const marcados = Object.entries(c.itens).filter(([, v]) => v);
+const internos = Object.entries(c.itensInternos).filter(([, v]) => v);
+const temConteudo =
+  marcados.length > 0 ||
+  internos.length > 0 ||
+  (c.fotos?.length ?? 0) > 0 ||
+  !!c.observacoes;
+if (!temConteudo) return null;
+const todosItens = [
+  ...marcados.map(([k, v]) => ({ label: k, valor: String(v) })),
+  ...internos.map(([k]) => ({ label: k, valor: "OK" })),
+];
+return (
       <div className="mt-3 border border-black p-2 text-[11px]">
         <p className="font-bold uppercase">
           {titulo}
