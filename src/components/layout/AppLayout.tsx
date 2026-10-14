@@ -48,7 +48,14 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-1 p-3">
       {NAV.filter((i) => pode(i.perm as never)).map((item) => {
-        const ativo = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+        const ativo =
+  item.to === "/"
+    ? pathname === "/"
+    : item.to === "/os"
+    ? pathname === "/os" || (pathname.startsWith("/os/") && !pathname.includes("/os/ORC-"))
+    : item.to === "/orcamentos"
+    ? pathname === "/orcamentos" || pathname.includes("/os/ORC-")
+    : pathname.startsWith(item.to);
         return (
           <Link
             key={item.to}

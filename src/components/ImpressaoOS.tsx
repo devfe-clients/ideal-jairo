@@ -8,11 +8,13 @@ export function ImpressaoOS({
   cliente,
   veiculo,
   mecanicos,
+  ocultarVistoria = false,
 }: {
   os: OrdemServico;
   cliente?: Cliente | undefined;
   veiculo?: Veiculo | undefined;
   mecanicos: Usuario[];
+  ocultarVistoria?: boolean;
 }) {
   const t = totaisOS(os, os.tipo === "orcamento");
   const itens = os.tipo === "orcamento" ? os.itens.filter((i) => i.aprovado) : os.itens;
@@ -239,8 +241,8 @@ return (
         </div>
       ) : null}
 
-      <Vistoria titulo="Vistoria de entrada" c={os.checklistEntrada} />
-      <Vistoria titulo="Vistoria de saída" c={os.checklistSaida} />
+      {!ocultarVistoria && <Vistoria titulo="Vistoria de entrada" c={os.checklistEntrada} />}
+      {!ocultarVistoria && <Vistoria titulo="Vistoria de saída" c={os.checklistSaida} />}
 
       <section className="mt-3 flex justify-end">
         <table className="text-[12px]">

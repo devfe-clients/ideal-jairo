@@ -118,7 +118,7 @@ function ItemVistoria({
 export const Route = createFileRoute("/os_/$id")({
   head: () => ({
     meta: [
-      { title: "Ordem de serviço | Oficina Ideal Jairo" },
+  { title: "OS / Orçamento | Oficina Ideal Jairo" },
       {
         name: "description",
         content:
@@ -155,6 +155,7 @@ function DetalheOS() {
   const original = ordens.find((o) => o.id === id);
   const [osState, setOS] = useState<OrdemServico | null>(null);
   const [dialogFinalizar, setDialogFinalizar] = useState(false);
+const [ocultarVistoriaDoc, setOcultarVistoriaDoc] = useState(false);
   const [osParaFinalizar, setOsParaFinalizar] = useState<OrdemServico | null>(null);
   const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
   const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
@@ -300,10 +301,15 @@ async function criarPecaNoEstoque() {
         <tbody>${linhas.map(linhaItem).join("")}</tbody>
       </table>`;
 
-    const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB64?: string[] }) => {
-      if (!cv) return "";
-      const marcados = Object.entries(cv.itens).filter(([, val]) => val);
-      return `
+const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB64?: string[] }) => {
+  if (!cv) return "";
+  const marcados = Object.entries(cv.itens).filter(([, val]) => val);
+  const temConteudo =
+    marcados.length > 0 ||
+    (cv.fotos?.length ?? 0) > 0 ||
+    !!cv.observacoes;
+  if (!temConteudo) return "";
+  return `
       <div style="margin-top:10px;border:1px solid #000;padding:8px;font-size:11px">
         <p style="font-weight:bold;text-transform:uppercase">${titulo}${cv.dataHora ? ` <span style="font-weight:normal;font-size:10px;text-transform:none">— registrada em ${cv.dataHora}</span>` : ""}</p>
         <p>Hodômetro: ${cv.hodometro.toLocaleString("pt-BR")} km · Combustível: ${cv.combustivel}</p>
@@ -400,8 +406,8 @@ async function criarPecaNoEstoque() {
   ${os.diagnostico || os.observacoes ? `<div style="border:1px solid #000;padding:6px;margin-top:10px">${os.diagnostico ? `<p><strong>Laudo técnico:</strong> ${os.diagnostico}</p>` : ""}${os.observacoes ? `<p><strong>Observações:</strong> ${os.observacoes}</p>` : ""}</div>` : ""}
 
   <!-- Vistorias -->
-  ${vistoria("Vistoria de entrada", checklistEntradaResolvida)}
-  ${vistoria("Vistoria de saída", checklistSaidaResolvida)}
+  ${ocultarVistoriaDoc ? "" : vistoria("Vistoria de entrada", checklistEntradaResolvida)}
+  ${ocultarVistoriaDoc ? "" : vistoria("Vistoria de saída", checklistSaidaResolvida)}
 
   <!-- Totais -->
   <div style="display:flex;justify-content:flex-end;margin-top:10px">
@@ -1036,7 +1042,7 @@ async function criarPecaNoEstoque() {
 
   return (
     <AppLayout
-      titulo={`${os.numero} — ${cliente?.nome ?? "Sem cliente"}`}
+      titulo={`[${os.tipo === "orcamento" ? "Orçamento" : "OS"}] ${os.numero} — ${cliente?.nome ?? "Sem cliente"}`}
       descricao={`${veiculo ? `${veiculo.placa} · ${veiculo.marca} ${veiculo.modelo}` : ""} · Resp. técnico: Jairo Alves de Oliveira`}
       acoes={
         <>
@@ -1570,9 +1576,18 @@ async function criarPecaNoEstoque() {
 
         <TabsContent value="documento" className="mt-4">
           <div id="impressao-os" className="overflow-x-auto rounded-lg border border-border">
-            <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} />
+            <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} ocultarVistoria={ocultarVistoriaDoc} />
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <Checkbox
+                checked={ocultarVistoriaDoc}
+                onCheckedChange={(v) => setOcultarVistoriaDoc(Boolean(v))}
+              />
+              Ocultar vistoria no documento
+            </label>
+          </div>
+          <div className="mt-2 flex gap-2">
             <Button variant="outline" onClick={() => void abrirImpressao()}>
               <Printer className="mr-1 h-4 w-4" /> Imprimir
             </Button>
