@@ -51,7 +51,7 @@ export function ImpressaoOS({
                   ? ` — mecânico: ${nomeMecanico(i.mecanicoId)}`
                   : ""}
               </td>
-              <td className="border border-black px-2 py-1 text-center">{i.quantidade}</td>
+              <td className="border border-black px-2 py-1 text-center">{parseFloat(String(i.quantidade))}</td>
               <td className="border border-black px-2 py-1 text-right">
                 {i.valorUnitario.toFixed(2)}
               </td>
