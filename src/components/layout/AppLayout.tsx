@@ -42,19 +42,20 @@ const NAV = [
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const { pode } = useAuth();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+const { pode } = useAuth();
+const pathname = useRouterState({ select: (s) => s.location.pathname });
+const tipoParam = useRouterState({ select: (s) => (s.location.search as Record<string, string>)["tipo"] });
 
-  return (
-    <nav className="flex flex-col gap-1 p-3">
-      {NAV.filter((i) => pode(i.perm as never)).map((item) => {
-        const ativo =
+return (
+  <nav className="flex flex-col gap-1 p-3">
+    {NAV.filter((i) => pode(i.perm as never)).map((item) => {
+      const ativo =
   item.to === "/"
     ? pathname === "/"
     : item.to === "/os"
-    ? pathname === "/os" || (pathname.startsWith("/os/") && !pathname.includes("/os/ORC-"))
+    ? pathname === "/os" || (pathname.startsWith("/os/") && tipoParam !== "orcamento")
     : item.to === "/orcamentos"
-    ? pathname === "/orcamentos" || pathname.includes("/os/ORC-")
+    ? pathname === "/orcamentos" || (pathname.startsWith("/os/") && tipoParam === "orcamento")
     : pathname.startsWith(item.to);
         return (
           <Link

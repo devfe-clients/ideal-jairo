@@ -277,10 +277,12 @@ async function criarPecaNoEstoque() {
       });
     } catch { /* sem logo */ }
 
-    const linhaItem = (i: (typeof itens)[0]) => `
+    const fmtQtd = (q: number) => Number.isInteger(q) ? String(q) : q.toFixed(2);
+
+const linhaItem = (i: (typeof itens)[0]) => `
       <tr>
         <td>${i.descricao}${i.tipo === "servico" && nomeMec(i.mecanicoId) ? ` — mecânico: ${nomeMec(i.mecanicoId)}` : ""}</td>
-        <td style="text-align:center">${Number(i.quantidade ?? 0).toFixed(2)}</td>
+        <td style="text-align:center">${fmtQtd(Number(i.quantidade ?? 0))}</td>
         <td style="text-align:right">${Number(i.valorUnitario ?? 0).toFixed(2)}</td>
         <td style="text-align:right">${Number(i.desconto ?? 0).toFixed(2)}</td>
         <td style="text-align:right">${itemTotal(i).toFixed(2)}</td>
@@ -1605,8 +1607,12 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
         <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} />
       </div>
 
-      <Dialog open={dialogFinalizar} onOpenChange={(v) => { if (!v) setDialogFinalizar(false); }}>
-        <DialogContent className="sm:max-w-md">
+<Dialog open={dialogFinalizar} onOpenChange={() => {}}>
+  <DialogContent
+    className="sm:max-w-md"
+    onInteractOutside={(e) => e.preventDefault()}
+    onEscapeKeyDown={(e) => e.preventDefault()}
+  >
           <DialogHeader>
             <DialogTitle>Finalizar OS</DialogTitle>
           </DialogHeader>

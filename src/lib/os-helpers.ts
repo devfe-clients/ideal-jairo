@@ -1,6 +1,6 @@
 import { novoId } from "./db";
 import type { Agendamento, Cliente, Lancamento, OrdemServico, Veiculo } from "./schemas";
-import { totaisOS } from "./calc";
+import { totaisOS, itemTotal } from "./calc";
 
 export function proximoNumero(ordens: OrdemServico[], tipo: "os" | "orcamento") {
   const prefixo = tipo === "os" ? "OS" : "ORC";
@@ -111,18 +111,17 @@ export function mensagemOrcamento(
   veiculo?: Veiculo,
 ): string {
   const t = totaisOS(os, true);
-  const linhas = os.itens
-    .filter((i) => i.aprovado)
-    .map((i) => `• ${i.descricao} — ${i.quantidade}x`);
-  return [
-    `Olá ${cliente?.nome?.split(" ")[0] ?? ""}! Oficina Ideal Jairo.`,
-    `Orçamento ${os.numero} — ${veiculo?.marca ?? ""} ${veiculo?.modelo ?? ""} (${veiculo?.placa ?? ""}).`,
-    "",
-    ...linhas,
-    "",
-    `Peças: R$ ${t.totalPecas.toFixed(2)}`,
-    `Mão de obra: R$ ${t.totalServicos.toFixed(2)}`,
-    `Total: R$ ${t.total.toFixed(2)}`,
+const fmtQtd = (q: number) => Number.isInteger(q) ? String(q) : q.toFixed(2);
+const linhas = os.itens
+  .filter((i) => i.aprovado)
+  .map((i) => `• ${i.descricao} — ${fmtQtd(i.quantidade)}x — R$ ${itemTotal(i).toFixed(2)}`);
+return [
+  `Olá ${cliente?.nome?.split(" ")[0] ?? ""}! Oficina Ideal Jairo.`,
+  `Orçamento ${os.numero} — ${veiculo?.marca ?? ""} ${veiculo?.modelo ?? ""} (${veiculo?.placa ?? ""}).`,
+  "",
+  ...linhas,
+  "",
+  `Total: R$ ${t.total.toFixed(2)}`,
     "",
     "Responsável técnico: Jairo Alves de Oliveira.",
     "",

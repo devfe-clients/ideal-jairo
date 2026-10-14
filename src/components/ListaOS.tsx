@@ -48,7 +48,7 @@ export function ListaOS({ tipo }: { tipo: "os" | "orcamento" }) {
 const { usuario, pode } = useAuth();
 const navigate = useNavigate();
 const [texto, setTexto] = useState("");
-  const [status, setStatus] = useState("aberto");
+  const [status, setStatus] = useState("todos");
   const [aberto, setAberto] = useState(false);
   const [novoCliente, setNovoCliente] = useState("");
   const [novoVeiculo, setNovoVeiculo] = useState("");
@@ -118,7 +118,7 @@ const [excluindoSelecionados, setExcluindoSelecionados] = useState(false);
     setAberto(false);
     setNovoCliente("");
     setNovoVeiculo("");
-    await navigate({ to: "/os/$id", params: { id: nova.id } });
+    await navigate({ to: "/os/$id", params: { id: nova.id }, search: { tipo: nova.tipo } });
   }
 
   return (
@@ -226,7 +226,7 @@ const [excluindoSelecionados, setExcluindoSelecionados] = useState(false);
                   </div>
                 ) : (
                   <>
-                    <Link to="/os/$id" params={{ id: o.id }} className="block h-full">
+                    <Link to="/os/$id" params={{ id: o.id }} search={{ tipo: o.tipo }} className="block h-full">
                       <Card className="h-full transition-colors hover:border-primary">
                         <CardContent className={`space-y-2 p-4 ${pode("excluir") ? "pr-10" : ""}`}>
                           <div className="flex items-start justify-between gap-2">
