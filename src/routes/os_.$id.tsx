@@ -257,7 +257,36 @@ async function criarPecaNoEstoque() {
     };
     await salvarServico(novo, usuario?.uid ?? "sistema");
     setNovoServicoNome("");
-    toast.success(`Serviço "${nome}" adicionado.`);
+  toast.success(`Serviço "${nome}" adicionado.`);
+}
+
+  function sanitizarParaSalvar(o: OrdemServico): OrdemServico {
+    const sanitizarCL = (c: Checklist | undefined): Checklist | undefined =>
+      c
+        ? {
+            ...c,
+            dataHora: c.dataHora ?? undefined,
+            fotos: (c.fotos ?? []).filter(Boolean) as string[],
+            itens: Object.fromEntries(
+              Object.entries(c.itens ?? {}).map(([k, v]) => [k, v ?? ""])
+            ) as Record<string, string>,
+          }
+        : undefined;
+    return {
+      ...o,
+      mecanicoId: o.mecanicoId ?? "",
+      previsao: o.previsao ?? "",
+      saida: o.saida ?? "",
+      criadoPor: o.criadoPor ?? "sistema",
+      criadoEm: o.criadoEm ?? new Date().toISOString(),
+      checklistEntrada: sanitizarCL(o.checklistEntrada),
+      checklistSaida: sanitizarCL(o.checklistSaida),
+      itens: (o.itens ?? []).map((i) => ({
+        ...i,
+        mecanicoId: i.mecanicoId ?? "",
+        pecaId: i.pecaId ?? "",
+      })),
+    };
   }
 
   useEffect(() => {
@@ -729,24 +758,26 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
   }
 
   async function salvar(silencioso = false) {
+    const osSanitizado = sanitizarParaSalvar(os);
     const erros: string[] = [];
-    for (const i of os.itens) {
+    for (const i of osSanitizado.itens) {
       const r = itemSchema.safeParse(i);
       if (!r.success) erros.push(`${i.descricao || "Item sem descrição"}: ${r.error.issues[0]?.message}`);
     }
-    const r = ordemServicoSchema.safeParse(os);
+    const r = ordemServicoSchema.safeParse(osSanitizado);
     if (!r.success) erros.push(r.error.issues[0]?.message ?? "Dados inválidos");
     if (erros.length) {
       toast.error(erros[0]);
       return false;
     }
-    await salvarOS(os, usuario?.uid ?? "sistema");
+    await salvarOS(osSanitizado, usuario?.uid ?? "sistema");
+    setOS(osSanitizado);
 
     //OS já está finalizada, atualiza o lançamento vinculado
-    if (os.status === "Finalizado" || os.status === "Entregue/Fechado") {
-      const lancamentoVinculado = lancamentos.find((l) => l.osId === os.id);
+    if (osSanitizado.status === "Finalizado" || osSanitizado.status === "Entregue/Fechado") {
+      const lancamentoVinculado = lancamentos.find((l) => l.osId === osSanitizado.id);
       if (lancamentoVinculado) {
-        const novoValor = totaisOS(os, true).total;
+        const novoValor = totaisOS(osSanitizado, true).total;
         if (lancamentoVinculado.valor !== novoValor) {
           await salvarLancamento(
             { ...lancamentoVinculado, valor: novoValor },
@@ -763,10 +794,11 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
 
   async function finalizar() {
     if (!(await salvar(true))) return;
+    const osSanitizado = sanitizarParaSalvar(os);
     const atualizada: OrdemServico = {
-      ...os,
+      ...osSanitizado,
       status: "Finalizado",
-      saida: os.saida || new Date().toISOString().slice(0, 10),
+      saida: osSanitizado.saida || new Date().toISOString().slice(0, 10),
     };
     for (const item of atualizada.itens) {
       if (item.tipo === "peca" && item.origem === "estoque" && item.pecaId) {

@@ -74,6 +74,7 @@ function AgendaPage() {
   const [status, setStatus] = useState("Todos");
 
   const [modalAberto, setModalAberto] = useState(false);
+  const [clienteRef, setClienteRef] = useState<Cliente | null>(null);
   const { dados: servicos } = useColecao<ServicoBase>("servicos");
   const { dados: configs } = useColecao<Config & { id: string }>("config");
 
@@ -113,6 +114,32 @@ function AgendaPage() {
   async function salvarManual() {
     const dados = formManual.validar();
     if (!dados) { toast.error("Confira os campos destacados."); return; }
+    if (!clienteRef) {
+      const jaExiste = clientes.find(
+        (c) => c.telefone.replace(/\D/g, "") === dados.telefone.replace(/\D/g, ""),
+      );
+      if (!jaExiste) {
+        await salvarCliente(
+          {
+            id: novoId(),
+            nome: dados.nome,
+            telefone: dados.telefone,
+            email: dados.email ?? "",
+            cpfCnpj: dados.cpfCnpj ?? "",
+            numero: "",
+            bairro: "",
+            cidade: "",
+            uf: "SP",
+            cep: "",
+            endereco: dados.endereco ?? "",
+            observacoes: "Cadastro criado via agendamento manual.",
+            consentimentoLgpd: dados.consentimentoLgpd,
+            criadoEm: new Date().toISOString(),
+          } as Cliente,
+          usuario?.uid ?? "sistema",
+        );
+      }
+    }
     const registro = {
       ...dados,
       id: novoId(),
@@ -121,6 +148,8 @@ function AgendaPage() {
     await salvar(registro, usuario?.uid ?? "sistema");
     toast.success("Agendamento criado.");
     setModalAberto(false);
+    setClienteRef(null);
+    setDia(registro.data);
   }
 
   const doDia = useMemo(
@@ -211,6 +240,7 @@ function AgendaPage() {
           </select>
           <Button size="sm" onClick={() => {
             formManual.reset({ ...vaziomanual, data: dia });
+            setClienteRef(null);
             setModalAberto(true);
           }}>
             <Plus className="mr-1 h-4 w-4" /> Novo agendamento
@@ -291,9 +321,40 @@ function AgendaPage() {
             <DialogTitle>Novo agendamento manual</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
-            <CampoTexto label="Nome completo" className="sm:col-span-2"
-              valor={String(formManual.valores["nome"] ?? "")} erro={formManual.erros["nome"]}
-              onChange={(v) => formManual.set("nome", v)} />
+            <Campo label="Nome completo" className="sm:col-span-2" erro={formManual.erros["nome"]}>
+              <datalist id="clientes-agenda">
+                {clientes
+                  .slice()
+                  .sort((a, b) => a.nome.localeCompare(b.nome))
+                  .map((c) => <option key={c.id} value={c.nome} />)}
+              </datalist>
+              <input
+                list="clientes-agenda"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                placeholder="Nome do cliente..."
+                value={String(formManual.valores["nome"] ?? "")}
+                onChange={(e) => {
+                  formManual.set("nome", e.target.value);
+                  const encontrado = clientes.find((c) => c.nome === e.target.value);
+                  if (encontrado) {
+                    setClienteRef(encontrado);
+                    formManual.set("telefone", encontrado.telefone);
+                    if (encontrado.email) formManual.set("email", encontrado.email);
+                    const veiculo = veiculos
+                      .filter((v) => v.clienteId === encontrado.id)
+                      .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())[0];
+                    if (veiculo) {
+                      formManual.set("placa", veiculo.placa);
+                      formManual.set("marca", veiculo.marca);
+                      formManual.set("modelo", veiculo.modelo);
+                      formManual.set("ano", String(veiculo.ano));
+                    }
+                  } else {
+                    setClienteRef(null);
+                  }
+                }}
+              />
+            </Campo>
             <CampoTexto label="CPF / CNPJ (opcional)"
               valor={formatarDoc(String(formManual.valores["cpfCnpj"] ?? ""))} erro={formManual.erros["cpfCnpj"]}
               onChange={(v) => formManual.set("cpfCnpj", v)} />
