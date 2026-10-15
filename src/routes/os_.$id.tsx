@@ -1097,6 +1097,49 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
         <TabsContent value="dados" className="mt-4 space-y-4">
           <Card>
             <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Campo label="Cliente" className="sm:col-span-2 lg:col-span-1">
+                <Select
+                  value={os.clienteId}
+                  onValueChange={(v) => {
+                    atualizar("clienteId", v);
+                    atualizar("veiculoId", "");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes
+                      .slice()
+                      .sort((a, b) => a.nome.localeCompare(b.nome))
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </Campo>
+              <Campo label="Veículo" className="sm:col-span-2 lg:col-span-2">
+                <Select
+                  value={os.veiculoId}
+                  onValueChange={(v) => atualizar("veiculoId", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o veículo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {veiculos
+                      .filter((v) => !os.clienteId || v.clienteId === os.clienteId)
+                      .sort((a, b) => `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`))
+                      .map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.placa} · {v.marca} {v.modelo} ({v.ano})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </Campo>
               <Campo label="Status">
                 <Select value={os.status} onValueChange={(v) => atualizar("status", v)}>
                   <SelectTrigger>
@@ -1235,11 +1278,11 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
-                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Serviço</th>
-                      <th className="w-24 px-4 py-2 text-center font-medium text-muted-foreground">QTD</th>
-                      <th className="w-32 px-4 py-2 text-right font-medium text-muted-foreground">Preço Unit.</th>
-                      <th className="w-28 px-4 py-2 text-right font-medium text-muted-foreground">Desconto</th>
-                      <th className="w-32 px-4 py-2 text-right font-medium text-muted-foreground">Total</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Serviço</th>
+                      <th className="w-24 px-4 py-3 text-center text-sm font-semibold text-foreground">QTD</th>
+                      <th className="w-36 px-4 py-3 text-right text-sm font-semibold text-foreground">Preço Unit.</th>
+                      <th className="w-32 px-4 py-3 text-right text-sm font-semibold text-foreground">Desconto</th>
+                      <th className="w-36 px-4 py-3 text-right text-sm font-semibold text-foreground">Total</th>
                       <th className="w-10 px-2 py-2" />
                     </tr>
                   </thead>
@@ -1265,7 +1308,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                                   </datalist>
                                   <input
                                     list={`servicos-${i.id}`}
-                                    className="flex-1 min-w-0 h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                                    className="flex-1 min-w-0 h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
                                     placeholder="Selecione ou descreva o serviço..."
                                     value={i.descricao}
                                     onChange={(e) => {
@@ -1314,7 +1357,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                             <td className="px-4 py-2">
                               <Input
                                 type="number"
-                                className="h-8 w-20 text-center"
+                                className="h-9 w-20 text-center text-sm"
                                 value={i.quantidade === 0 ? "" : i.quantidade}
                                 placeholder="0"
                                 onChange={(e) => atualizarItem(i.id, "quantidade", Number(e.target.value) || 0)}
@@ -1322,14 +1365,14 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                             </td>
                             <td className="px-4 py-2">
 <MoneyInput
-  className="h-8 w-28"
+  className="h-9 w-28 text-sm"
   value={i.valorUnitario}
   onChange={(v) => atualizarItem(i.id, "valorUnitario", v)}
 />
                             </td>
                             <td className="px-4 py-2">
 <MoneyInput
-  className="h-8 w-24"
+  className="h-9 w-24 text-sm"
   value={i.desconto}
   onChange={(v) => atualizarItem(i.id, "desconto", v)}
 />
@@ -1404,31 +1447,25 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                             <td className="px-4 py-2">
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <Select
-                                    value={i.pecaId || ""}
-                                    onValueChange={(v) => { if (v) aplicarValorBase(i.id, "peca", v); }}
-                                  >
-                                    <SelectTrigger className="h-7 w-48 text-xs">
-                                      <SelectValue placeholder="Usar peça do estoque..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="">digitação livre</SelectItem>
-                                      {carregandoPecas ? (
-                                        <div className="px-3 py-2 text-xs text-muted-foreground">Carregando estoque…</div>
-                                      ) : pecas.length === 0 ? (
-                                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhuma peça no estoque.</div>
-                                      ) : (
-                                        pecas
-                                          .slice()
-                                          .sort((a, b) => a.nome.localeCompare(b.nome))
-                                          .map((x) => (
-                                            <SelectItem key={x.id} value={x.id}>
-                                              {x.nome}{x.codigo ? ` (${x.codigo})` : ""} — {x.quantidade} un · {brl(x.precoVenda)}
-                                            </SelectItem>
-                                          ))
-                                      )}
-                                    </SelectContent>
-                                  </Select>
+                                  <datalist id={`pecas-${i.id}`}>
+                                    {pecas
+                                      .slice()
+                                      .sort((a, b) => a.nome.localeCompare(b.nome))
+                                      .map((x) => (
+                                        <option key={x.id} value={x.nome} />
+                                      ))}
+                                  </datalist>
+                                  <input
+                                    list={`pecas-${i.id}`}
+                                    className="flex-1 min-w-0 h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                                    placeholder="Selecione do estoque ou digite..."
+                                    value={i.descricao}
+                                    onChange={(e) => {
+                                      atualizarItem(i.id, "descricao", e.target.value);
+                                      const p = pecas.find((x) => x.nome === e.target.value);
+                                      if (p) aplicarValorBase(i.id, "peca", p.id);
+                                    }}
+                                  />
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -1436,7 +1473,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                                     title="Criar nova peça no estoque"
                                     onClick={() =>
                                       setModalPeca({ itemId: i.id, nome: i.descricao, custo: "", venda: "", margem: "" })
-                                    }
+                                  }
                                   >
                                     <Plus className="h-3.5 w-3.5" />
                                   </Button>
@@ -1478,7 +1515,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                             <td className="px-4 py-2">
                               <Input
                                 type="number"
-                                className="h-8 w-20 text-center"
+                                className="h-9 w-20 text-center text-sm"
                                 value={i.quantidade === 0 ? "" : i.quantidade}
                                 placeholder="0"
                                 onChange={(e) => atualizarItem(i.id, "quantidade", Number(e.target.value) || 0)}
@@ -1487,7 +1524,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                             <td className="px-4 py-2">
                               <Input
                                 type="number"
-                                className="h-8 w-28 text-right"
+                                className="h-9 w-28 text-right text-sm"
                                 value={i.valorUnitario === 0 ? "" : i.valorUnitario}
                                 placeholder="0,00"
                                 onChange={(e) => atualizarItem(i.id, "valorUnitario", Number(e.target.value) || 0)}
@@ -1496,7 +1533,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                             <td className="px-4 py-2">
                               <Input
                                 type="number"
-                                className="h-8 w-24 text-right"
+                                className="h-9 w-24 text-right text-sm"
                                 value={i.desconto === 0 ? "" : i.desconto}
                                 placeholder="0,00"
                                 onChange={(e) => atualizarItem(i.id, "desconto", Number(e.target.value) || 0)}
