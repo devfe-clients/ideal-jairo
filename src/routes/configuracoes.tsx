@@ -329,8 +329,10 @@ function diasDoMes(ano: number, mes: number) {
                 <div className="space-y-1 rounded-md border border-border">
 {(() => {
                     const nomesDoTexto = servicosTexto.split("\n").map((s) => s.trim()).filter(Boolean);
-                    const nomesExtras = servicos.map((s) => s.nome).filter((n) => !nomesDoTexto.includes(n));
-                    const todosNomes = [...nomesDoTexto, ...nomesExtras];
+                    const nomesExtras = servicos
+  .filter((s) => s.disponivelParaAgendamento !== false)
+  .map((s) => s.nome)
+  .filter((n) => !nomesDoTexto.includes(n));                    const todosNomes = [...nomesDoTexto, ...nomesExtras];
                     if (todosNomes.length === 0) {
                       return (
                         <p className="px-3 py-4 text-center text-sm text-muted-foreground">
