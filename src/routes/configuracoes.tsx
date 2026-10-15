@@ -82,7 +82,10 @@ const [calAno, setCalAno] = useState(() => new Date().getFullYear());
     if (servicos.length === 0) return;
     setServicosTexto((prev) => {
       const existentes = prev.split("\n").map((s) => s.trim()).filter(Boolean);
-      const novos = servicos.map((s) => s.nome).filter((n) => !existentes.includes(n));
+      const novos = servicos
+        .filter((s) => s.disponivelParaAgendamento !== false)
+        .map((s) => s.nome)
+        .filter((n) => !existentes.includes(n));
       if (novos.length === 0) return prev;
       return [...existentes, ...novos].join("\n");
     });

@@ -149,7 +149,7 @@ function DetalheOS() {
   const { dados: veiculos } = useColecao<Veiculo>("veiculos");
   const { dados: usuarios } = useColecao<Usuario>("usuarios");
   const { dados: pecas, salvar: salvarPeca, carregando: carregandoPecas } = useColecao<Peca>("pecas");
-  const { dados: servicos, salvar: salvarServico } = useColecao<ServicoBase>("servicos");
+  const { dados: servicos, salvar: salvarServico, remover: removerServico } = useColecao<ServicoBase>("servicos");
   const { dados: lancamentos, salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
 
   const original = ordens.find((o) => o.id === id);
@@ -157,8 +157,10 @@ function DetalheOS() {
   const [dialogFinalizar, setDialogFinalizar] = useState(false);
 const [ocultarVistoriaDoc, setOcultarVistoriaDoc] = useState(false);
   const [osParaFinalizar, setOsParaFinalizar] = useState<OrdemServico | null>(null);
-  const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
-  const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
+const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
+const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
+const [dialogServicos, setDialogServicos] = useState(false);
+const [novoServicoNome, setNovoServicoNome] = useState("");
 const [modalPeca, setModalPeca] = useState<{
   itemId: string;
   nome: string;
@@ -220,7 +222,7 @@ async function criarPecaNoEstoque() {
       nome: modalNovoServico.nome,
       valorPadrao: Number(modalNovoServico.valor) || 0,
       tempoEstimado: 1,
-      disponivelParaAgendamento: true,
+      disponivelParaAgendamento: false,
     };
     await salvarServico(novo, usuario?.uid ?? "sistema");
     setOS((a) =>
@@ -237,6 +239,25 @@ async function criarPecaNoEstoque() {
     );
     toast.success(`Serviço "${novo.nome}" criado e aplicado.`);
     setModalNovoServico(null);
+  }
+
+  async function adicionarServicoNoCatalogo() {
+    const nome = novoServicoNome.trim();
+    if (!nome) return;
+    if (servicos.some((s) => s.nome.toLowerCase() === nome.toLowerCase())) {
+      toast.error("Serviço já cadastrado.");
+      return;
+    }
+    const novo: ServicoBase = {
+      id: novoId(),
+      nome,
+      valorPadrao: 0,
+      tempoEstimado: 1,
+      disponivelParaAgendamento: false,
+    };
+    await salvarServico(novo, usuario?.uid ?? "sistema");
+    setNovoServicoNome("");
+    toast.success(`Serviço "${nome}" adicionado.`);
   }
 
   useEffect(() => {
@@ -283,9 +304,9 @@ const linhaItem = (i: (typeof itens)[0]) => `
       <tr>
         <td>${i.descricao}${i.tipo === "servico" && nomeMec(i.mecanicoId) ? ` — mecânico: ${nomeMec(i.mecanicoId)}` : ""}</td>
         <td style="text-align:center">${fmtQtd(Number(i.quantidade ?? 0))}</td>
-        <td style="text-align:right">${Number(i.valorUnitario ?? 0).toFixed(2)}</td>
-        <td style="text-align:right">${Number(i.desconto ?? 0).toFixed(2)}</td>
-        <td style="text-align:right">${itemTotal(i).toFixed(2)}</td>
+        <td style="text-align:right">${Number(i.valorUnitario ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="text-align:right">${Number(i.desconto ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="text-align:right">${itemTotal(i).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
       </tr>`;
 
     const tabela = (titulo: string, linhas: typeof itens) => linhas.length === 0 ? "" : `
@@ -1268,8 +1289,8 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
                   <CardTitle className="text-base">Serviços</CardTitle>
                   <p className="text-xs text-muted-foreground">Adicione os serviços prestados nesta ordem</p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => void navigate({ to: "/configuracoes" })}>
-                  Cadastro de Serviços
+                <Button size="sm" variant="outline" onClick={() => setDialogServicos(true)}>
+                  Catálogo de Serviços
                 </Button>
               </div>
             </CardHeader>
@@ -1841,6 +1862,59 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
             <DialogFooter>
               <Button variant="outline" onClick={() => setModalPeca(null)}>Cancelar</Button>
               <Button onClick={() => void criarPecaNoEstoque()}>Criar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+      {dialogServicos ? (
+        <Dialog open onOpenChange={(v) => { if (!v) { setDialogServicos(false); setNovoServicoNome(""); } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Catálogo de serviços</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground -mt-2 mb-3">
+              Serviços disponíveis para seleção nas OS. Para ativá-los na agenda pública, acesse Configurações.
+            </p>
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="Nome do novo serviço..."
+                value={novoServicoNome}
+                onChange={(e) => setNovoServicoNome(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void adicionarServicoNoCatalogo(); }}
+              />
+              <Button size="sm" onClick={() => void adicionarServicoNoCatalogo()}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="max-h-72 overflow-y-auto rounded-md border border-border">
+              {servicos.length === 0 ? (
+                <p className="px-3 py-4 text-center text-sm text-muted-foreground">Nenhum serviço cadastrado.</p>
+              ) : (
+                servicos
+                  .slice()
+                  .sort((a, b) => a.nome.localeCompare(b.nome))
+                  .map((s) => (
+                    <div key={s.id} className="flex items-center justify-between gap-2 px-3 py-2 even:bg-muted/40">
+                      <span className="text-sm">{s.nome}</span>
+                      <div className="flex items-center gap-2">
+                        {s.valorPadrao ? <span className="text-xs text-muted-foreground">{brl(s.valorPadrao)}</span> : null}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-destructive"
+                          onClick={() => {
+                            void removerServico(s.id, usuario?.uid ?? "sistema").then(() => toast.success("Serviço removido."));
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => { setDialogServicos(false); setNovoServicoNome(""); }}>Fechar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

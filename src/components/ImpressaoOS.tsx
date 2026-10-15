@@ -53,11 +53,11 @@ export function ImpressaoOS({
               </td>
               <td className="border border-black px-2 py-1 text-center">{parseFloat(String(i.quantidade))}</td>
               <td className="border border-black px-2 py-1 text-right">
-                {i.valorUnitario.toFixed(2)}
+                {i.valorUnitario.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </td>
-              <td className="border border-black px-2 py-1 text-right">{i.desconto.toFixed(2)}</td>
+              <td className="border border-black px-2 py-1 text-right">{i.desconto.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="border border-black px-2 py-1 text-right">
-                {itemTotal(i).toFixed(2)}
+                {itemTotal(i).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </td>
             </tr>
           ))}
