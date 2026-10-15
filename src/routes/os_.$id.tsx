@@ -1098,27 +1098,27 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
           <Card>
             <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Cliente" className="sm:col-span-2 lg:col-span-1">
-                <Select
-                  value={os.clienteId}
-                  onValueChange={(v) => {
-                    atualizar("clienteId", v);
-                    atualizar("veiculoId", "");
+                <datalist id="clientes-os">
+                  {clientes
+                    .slice()
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((c) => (
+                      <option key={c.id} value={c.nome} />
+                    ))}
+                </datalist>
+                <input
+                  list="clientes-os"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                  placeholder="Digite o nome do cliente..."
+                  defaultValue={clientes.find((c) => c.id === os.clienteId)?.nome ?? ""}
+                  onChange={(e) => {
+                    const encontrado = clientes.find((c) => c.nome === e.target.value);
+                    if (encontrado) {
+                      atualizar("clienteId", encontrado.id);
+                      atualizar("veiculoId", "");
+                    }
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o cliente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes
-                      .slice()
-                      .sort((a, b) => a.nome.localeCompare(b.nome))
-                      .map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.nome}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                />
               </Campo>
               <Campo label="Veículo" className="sm:col-span-2 lg:col-span-2">
                 <Select
