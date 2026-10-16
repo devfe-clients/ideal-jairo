@@ -265,28 +265,38 @@ async function criarPecaNoEstoque() {
       c
         ? {
             ...c,
-            dataHora: c.dataHora ?? undefined,
+            dataHora: c.dataHora ?? "",
             fotos: (c.fotos ?? []).filter(Boolean) as string[],
             itens: Object.fromEntries(
               Object.entries(c.itens ?? {}).map(([k, v]) => [k, v ?? ""])
             ) as Record<string, string>,
           }
         : undefined;
-    return {
+
+    const clSanitizado = sanitizarCL(o.checklistEntrada);
+    const clSaidaSanitizado = sanitizarCL(o.checklistSaida);
+
+    const base: OrdemServico = {
       ...o,
       mecanicoId: o.mecanicoId ?? "",
       previsao: o.previsao ?? "",
       saida: o.saida ?? "",
       criadoPor: o.criadoPor ?? "sistema",
       criadoEm: o.criadoEm ?? new Date().toISOString(),
-      checklistEntrada: sanitizarCL(o.checklistEntrada),
-      checklistSaida: sanitizarCL(o.checklistSaida),
       itens: (o.itens ?? []).map((i) => ({
         ...i,
         mecanicoId: i.mecanicoId ?? "",
         pecaId: i.pecaId ?? "",
       })),
     };
+
+    if (clSanitizado !== undefined) base.checklistEntrada = clSanitizado;
+    else delete base.checklistEntrada;
+
+    if (clSaidaSanitizado !== undefined) base.checklistSaida = clSaidaSanitizado;
+    else delete base.checklistSaida;
+
+    return base;
   }
 
   useEffect(() => {
@@ -770,19 +780,28 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
       toast.error(erros[0]);
       return false;
     }
-    await salvarOS(osSanitizado, usuario?.uid ?? "sistema");
+    try {
+      await salvarOS(osSanitizado, usuario?.uid ?? "sistema");
+    } catch (err) {
+      console.error("Erro ao salvar OS:", err);
+      toast.error("Erro ao salvar OS. Verifique a conexão e tente novamente.");
+      return false;
+    }
     setOS(osSanitizado);
 
-    //OS já está finalizada, atualiza o lançamento vinculado
     if (osSanitizado.status === "Finalizado" || osSanitizado.status === "Entregue/Fechado") {
       const lancamentoVinculado = lancamentos.find((l) => l.osId === osSanitizado.id);
       if (lancamentoVinculado) {
         const novoValor = totaisOS(osSanitizado, true).total;
         if (lancamentoVinculado.valor !== novoValor) {
-          await salvarLancamento(
-            { ...lancamentoVinculado, valor: novoValor },
-            usuario?.uid ?? "sistema",
-          );
+          try {
+            await salvarLancamento(
+              { ...lancamentoVinculado, valor: novoValor },
+              usuario?.uid ?? "sistema",
+            );
+          } catch (err) {
+            console.error("Erro ao atualizar lançamento:", err);
+          }
           if (!silencioso) toast.info("Conta a receber atualizada automaticamente.");
         }
       }

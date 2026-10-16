@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarDays, Check, MessageCircle, Plus, Wrench, X } from "lucide-react";
+import { CalendarDays, Check, MessageCircle, Plus, Trash2, Wrench, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Campo, CampoArea, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
@@ -66,7 +66,7 @@ const CORES: Record<string, string> = {
 function AgendaPage() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  const { dados: agendamentos, salvar } = useColecao<Agendamento>("agendamentos");
+  const { dados: agendamentos, salvar, remover } = useColecao<Agendamento>("agendamentos");
   const { dados: clientes, salvar: salvarCliente } = useColecao<Cliente>("clientes");
   const { dados: veiculos, salvar: salvarVeiculo } = useColecao<Veiculo>("veiculos");
   const { dados: ordens, salvar: salvarOS } = useColecao<OrdemServico>("ordens");
@@ -75,6 +75,7 @@ function AgendaPage() {
   const [modo, setModo] = useState<"dia" | "proximos">("dia");
 
   const [modalAberto, setModalAberto] = useState(false);
+  const [confirmarExclusao, setConfirmarExclusao] = useState<Agendamento | null>(null);
   const [clienteRef, setClienteRef] = useState<Cliente | null>(null);
   const { dados: servicos } = useColecao<ServicoBase>("servicos");
   const { dados: configs } = useColecao<Config & { id: string }>("config");
@@ -334,6 +335,14 @@ function AgendaPage() {
                       </Button>
                     </>
                   ) : null}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => setConfirmarExclusao(a)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
                 </Card>
@@ -453,6 +462,36 @@ function AgendaPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalAberto(false)}>Cancelar</Button>
             <Button onClick={() => void salvarManual()}>Salvar agendamento</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmarExclusao} onOpenChange={(v) => { if (!v) setConfirmarExclusao(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir agendamento</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir o agendamento de{" "}
+            <strong>{confirmarExclusao?.nome}</strong> em{" "}
+            {confirmarExclusao ? dataBR(confirmarExclusao.data) : ""} às{" "}
+            {confirmarExclusao?.hora}? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmarExclusao(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!confirmarExclusao) return;
+                await remover(confirmarExclusao.id, usuario?.uid ?? "sistema");
+                toast.success("Agendamento excluído.");
+                setConfirmarExclusao(null);
+              }}
+            >
+              Excluir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
