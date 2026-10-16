@@ -72,6 +72,7 @@ function AgendaPage() {
   const { dados: ordens, salvar: salvarOS } = useColecao<OrdemServico>("ordens");
   const [dia, setDia] = useState(() => new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState("Todos");
+  const [modo, setModo] = useState<"dia" | "proximos">("dia");
 
   const [modalAberto, setModalAberto] = useState(false);
   const [clienteRef, setClienteRef] = useState<Cliente | null>(null);
@@ -154,11 +155,16 @@ function AgendaPage() {
 
   const doDia = useMemo(
     () =>
-      agendamentos
-        .filter((a) => a.data === dia)
-        .filter((a) => status === "Todos" || a.status === status)
-        .sort((a, b) => a.hora.localeCompare(b.hora)),
-    [agendamentos, dia, status],
+      modo === "proximos"
+        ? agendamentos
+            .filter((a) => a.data >= new Date().toISOString().slice(0, 10))
+            .filter((a) => status === "Todos" || a.status === status)
+            .sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora))
+        : agendamentos
+            .filter((a) => a.data === dia)
+            .filter((a) => status === "Todos" || a.status === status)
+            .sort((a, b) => a.hora.localeCompare(b.hora)),
+    [agendamentos, dia, status, modo],
   );
 
   async function mudarStatus(a: Agendamento, novo: Agendamento["status"]) {
@@ -223,12 +229,14 @@ function AgendaPage() {
       descricao="Horários solicitados pelos clientes no agendamento online."
       acoes={
         <>
-          <Input
-            type="date"
-            className="w-40"
-            value={dia}
-            onChange={(e) => setDia(e.target.value)}
-          />
+          {modo === "dia" ? (
+            <Input
+              type="date"
+              className="w-40"
+              value={dia}
+              onChange={(e) => setDia(e.target.value)}
+            />
+          ) : null}
           <select
             className="h-9 rounded-md border border-input bg-background px-2 text-sm"
             value={status}
@@ -238,6 +246,13 @@ function AgendaPage() {
               <option key={s}>{s}</option>
             ))}
           </select>
+          <Button
+            size="sm"
+            variant={modo === "proximos" ? "default" : "outline"}
+            onClick={() => setModo((m) => (m === "dia" ? "proximos" : "dia"))}
+          >
+            {modo === "proximos" ? "← Dia" : "Próximos →"}
+          </Button>
           <Button size="sm" onClick={() => {
             formManual.reset({ ...vaziomanual, data: dia });
             setClienteRef(null);
@@ -250,15 +265,25 @@ function AgendaPage() {
     >
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
         <CalendarDays className="h-4 w-4" />
-        {doDia.length} agendamento(s) em {dataBR(dia)}
+        {modo === "proximos"
+          ? `${doDia.length} agendamento(s) a partir de hoje`
+          : `${doDia.length} agendamento(s) em ${dataBR(dia)}`}
       </div>
 
       {doDia.length === 0 ? (
-        <Vazio mensagem="Nenhum agendamento para este dia e filtro." />
+        <Vazio mensagem={modo === "proximos" ? "Nenhum agendamento futuro." : "Nenhum agendamento para este dia e filtro."} />
       ) : (
         <div className="space-y-3">
-          {doDia.map((a) => (
-            <Card key={a.id}>
+          {doDia.map((a, idx) => {
+            const mostrarData = modo === "proximos" && (idx === 0 || doDia[idx - 1]?.data !== a.data);
+            return (
+              <div key={a.id}>
+                {mostrarData ? (
+                  <p className={`text-sm font-semibold text-foreground pb-2 mb-2 border-b border-border${idx > 0 ? " mt-4" : ""}`}>
+                    {dataBR(a.data)}
+                  </p>
+                ) : null}
+                <Card>
               <CardContent className="flex flex-wrap items-center gap-4 p-4">
                 <div className="w-16 shrink-0 text-center">
                   <p className="font-display text-xl font-bold text-primary">{a.hora}</p>
@@ -311,8 +336,10 @@ function AgendaPage() {
                   ) : null}
                 </div>
               </CardContent>
-            </Card>
-          ))}
+                </Card>
+              </div>
+            );
+          })}
         </div>
       )}
       <Dialog open={modalAberto} onOpenChange={setModalAberto}>
