@@ -807,7 +807,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
       }
     }
 
-    if (!silencioso) toast.success("Alterações salvas.");
+    if (!silencioso) toast.success("Alterações salvas.", { duration: 2000 });
     return true;
   }
 
