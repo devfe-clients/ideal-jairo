@@ -913,10 +913,28 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     atualizar(lado, { ...atual, [campo]: valor, dataHora });
   }
 
-  const BlocoChecklist = ({ lado, titulo }: { lado: "checklistEntrada" | "checklistSaida"; titulo: string }) => {
+function BlocoChecklist({
+  lado,
+  titulo,
+  os,
+  atualizar,
+  atualizarChecklist,
+  enviarFotos,
+  mecanicos,
+}: {
+  lado: "checklistEntrada" | "checklistSaida";
+  titulo: string;
+  os: OrdemServico;
+  atualizar: (campo: keyof OrdemServico, valor: unknown) => void;
+  atualizarChecklist: (lado: "checklistEntrada" | "checklistSaida", campo: keyof Checklist, valor: unknown) => void;
+  enviarFotos: (lado: "checklistEntrada" | "checklistSaida", arquivos: FileList | null) => Promise<void>;
+  mecanicos: Usuario[];
+}) {
     const c = os[lado] ?? checklistVazio;
     const [hodometroLocal, setHodometroLocal] = useState(String(c.hodometro));
     useEffect(() => { setHodometroLocal(String(c.hodometro)); }, [c.hodometro]);
+    const [obsLocal, setObsLocal] = useState(c.observacoes);
+    useEffect(() => { setObsLocal(c.observacoes); }, [c.observacoes]);
 
     const parsearDataHora = (dh: string) => {
       const [datePart, timePart] = dh.split(" ");
@@ -1043,8 +1061,9 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
 
           <CampoArea
             label="Observações"
-            valor={c.observacoes}
-            onChange={(v) => atualizarChecklist(lado, "observacoes", v)}
+            valor={obsLocal}
+            onChange={(v) => setObsLocal(v)}
+            onBlur={() => atualizarChecklist(lado, "observacoes", obsLocal)}
           />
 
           <div>
@@ -1112,7 +1131,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
         </CardContent>
       </Card>
     );
-  };
+}
 
   return (
     <AppLayout
@@ -1681,8 +1700,24 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
         </TabsContent>
 
         <TabsContent value="vistoria" className="mt-4 space-y-4">
-          <BlocoChecklist lado="checklistEntrada" titulo="Vistoria de entrada" />
-          <BlocoChecklist lado="checklistSaida" titulo="Vistoria de saída (entrega)" />
+  <BlocoChecklist
+  lado="checklistEntrada"
+  titulo="Vistoria de entrada (recepção)"
+  os={os}
+  atualizar={atualizar}
+  atualizarChecklist={atualizarChecklist}
+  enviarFotos={enviarFotos}
+  mecanicos={mecanicos}
+/>
+  <BlocoChecklist
+  lado="checklistSaida"
+  titulo="Vistoria de saída (entrega)"
+  os={os}
+  atualizar={atualizar}
+  atualizarChecklist={atualizarChecklist}
+  enviarFotos={enviarFotos}
+  mecanicos={mecanicos}
+/>
         </TabsContent>
 
         <TabsContent value="documento" className="mt-4">

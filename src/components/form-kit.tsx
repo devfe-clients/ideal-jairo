@@ -109,6 +109,7 @@ export function CampoArea({
   label,
   valor,
   onChange,
+  onBlur,
   erro,
   placeholder,
   rows = 3,
@@ -117,6 +118,7 @@ export function CampoArea({
   label: string;
   valor: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   erro?: string | undefined;
   placeholder?: string | undefined;
   rows?: number;
@@ -129,6 +131,7 @@ export function CampoArea({
         value={valor}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         aria-invalid={Boolean(erro)}
         className="resize-none"
       />
