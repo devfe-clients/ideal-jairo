@@ -223,21 +223,22 @@ return (
         </div>
       ) : null}
 
+      {os.diagnostico ? (
+        <div className="mt-3 border border-black p-2 text-[11px]">
+          <p>
+            <strong>Laudo técnico:</strong> {os.diagnostico}
+          </p>
+        </div>
+      ) : null}
+
       <Tabela titulo="Serviços executados" linhas={servicos} />
       <Tabela titulo="Peças e materiais aplicados" linhas={pecas} />
 
-      {os.diagnostico || os.observacoes ? (
+      {os.observacoes ? (
         <div className="mt-3 border border-black p-2 text-[11px]">
-          {os.diagnostico ? (
-            <p>
-              <strong>Laudo técnico:</strong> {os.diagnostico}
-            </p>
-          ) : null}
-          {os.observacoes ? (
-            <p>
-              <strong>Observações:</strong> {os.observacoes}
-            </p>
-          ) : null}
+          <p>
+            <strong>Observações:</strong> {os.observacoes}
+          </p>
         </div>
       ) : null}
 
