@@ -133,7 +133,7 @@ export const Route = createFileRoute("/os_/$id")({
 
 const checklistVazio: Checklist = {
   hodometro: 0,
-  combustivel: "1/2 (50%)",
+  combustivel: "— (não informado)",
   itens: {},
   itensInternos: {},
   observacoes: "",
@@ -457,15 +457,15 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     </div>
   </div>
 
-  <!-- Problema relatado -->
-  ${os.reclamacao ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p style="font-weight:bold;text-transform:uppercase">Problema relatado</p><p>${os.reclamacao}</p></div>` : ""}
-
-  <!-- Laudo técnico (antes das tabelas) -->
-  ${os.diagnostico ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p><strong>Laudo técnico:</strong> ${os.diagnostico}</p></div>` : ""}
+  <!-- Laudo técnico -->
+  ${os.diagnostico ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p style="font-weight:bold;text-transform:uppercase">Laudo técnico</p><p>${os.diagnostico}</p></div>` : ""}
 
   <!-- Tabelas -->
     ${tabela("Serviços executados", servicosImpressao)}
     ${tabela("Peças e materiais aplicados", pecasImpressao)}
+
+  <!-- Problema relatado -->
+  ${os.reclamacao ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p style="font-weight:bold;text-transform:uppercase">Problema relatado</p><p>${os.reclamacao}</p></div>` : ""}
 
   <!-- Observações -->
   ${os.observacoes ? `<div style="border:1px solid #000;padding:6px;margin-top:10px"><p><strong>Observações:</strong> ${os.observacoes}</p></div>` : ""}

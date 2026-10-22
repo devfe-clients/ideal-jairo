@@ -65,6 +65,7 @@ export const OPCOES_POR_ITEM: Record<string, readonly string[]> = {
 };
 
 export const NIVEIS_COMBUSTIVEL = [
+  "— (não informado)",
   "Reserva",
   "1/4 (25%)",
   "1/2 (50%)",
