@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Check, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Check, Search, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Campo, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
@@ -78,6 +78,7 @@ function FinanceiroPage() {
   const { dados: clientes } = useColecao<Cliente>("clientes");
   const { dados: ordens } = useColecao<OrdemServico>("ordens");
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
+  const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroStatus, setFiltroStatus] = useState<StatusFiltro>("Todos");
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
@@ -95,20 +96,27 @@ function FinanceiroPage() {
   //form de edição local
   const [formEdit, setFormEdit] = useState<Partial<Lancamento>>({});
 
-  const doMes = useMemo(
-    () =>
-      lancamentos
-        .filter((l) => l.vencimento.startsWith(mes))
-        .filter((l) => filtroTipo === "Todos" || l.tipo === filtroTipo)
-        .filter((l) => filtroCategoria === "Todas" || l.categoria === filtroCategoria)
-        .filter((l) => {
-          if (filtroStatus === "Todos") return true;
-          if (filtroStatus === "A pagar") return l.tipo === "pagar";
-          return statusLancamento(l) === filtroStatus;
-        })
-        .sort((a, b) => a.vencimento.localeCompare(b.vencimento)),
-    [lancamentos, mes, filtroTipo, filtroStatus, filtroCategoria],
-  );
+  const doMes = useMemo(() => {
+    const t = busca.trim().toLowerCase();
+    return lancamentos
+      .filter((l) => l.vencimento.startsWith(mes))
+      .filter((l) => filtroTipo === "Todos" || l.tipo === filtroTipo)
+      .filter((l) => filtroCategoria === "Todas" || l.categoria === filtroCategoria)
+      .filter((l) => {
+        if (filtroStatus === "Todos") return true;
+        if (filtroStatus === "A pagar") return l.tipo === "pagar";
+        return statusLancamento(l) === filtroStatus;
+      })
+      .filter((l) => {
+        if (!t) return true;
+        const nomeCliente = clientes.find((c) => c.id === l.clienteId)?.nome ?? "";
+        return (
+          l.descricao.toLowerCase().includes(t) ||
+          nomeCliente.toLowerCase().includes(t)
+        );
+      })
+      .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  }, [lancamentos, mes, filtroTipo, filtroStatus, filtroCategoria, busca, clientes]);
 
   const totais = useMemo(() => {
     const doPeriodo = lancamentos.filter((l) => l.vencimento.startsWith(mes));
@@ -398,6 +406,16 @@ function FinanceiroPage() {
           titulo="Resultado previsto"
           valor={brl(totais.saldo)}
           cor={totais.saldo >= 0 ? "text-primary" : "text-destructive"}
+        />
+      </div>
+
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          placeholder="Buscar por cliente ou descrição..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
         />
       </div>
 
