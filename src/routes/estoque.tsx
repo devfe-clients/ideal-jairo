@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Campo, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
+import { Campo, CampoMoeda, CampoTexto, Vazio, useFormularioZod } from "@/components/form-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -114,10 +114,17 @@ async function confirmar() {
       }
     >
       {abaixo.length > 0 ? (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
-          <AlertTriangle className="h-4 w-4 text-warning" />
-          {abaixo.length} peça(s) no estoque mínimo: {abaixo.map((p) => p.nome).join(", ")}
-        </div>
+        <details className="mb-4">
+          <summary className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-warning hover:bg-warning/10">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            {abaixo.length} peça(s) abaixo do mínimo — ver detalhes
+          </summary>
+          <ul className="mt-2 space-y-0.5 pl-1 text-xs text-muted-foreground">
+            {abaixo.map((p) => (
+              <li key={p.id}>· {p.nome} ({p.quantidade} un)</li>
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       {lista.length === 0 ? (
@@ -239,19 +246,17 @@ onClick={() => {
               erro={form.erros["localizacao"]}
               onChange={(v) => form.set("localizacao", v)}
             />
-            <CampoTexto
+            <CampoMoeda
               label="Custo (R$)"
-              type="number"
-              valor={String(form.valores["custo"] ?? 0)}
+              valor={Number(form.valores["custo"] ?? 0)}
               erro={form.erros["custo"]}
-              onChange={(v) => form.set("custo", Number(v) || 0)}
+              onChange={(v) => form.set("custo", v)}
             />
-            <CampoTexto
+            <CampoMoeda
               label="Preço de venda (R$)"
-              type="number"
-              valor={String(form.valores["precoVenda"] ?? 0)}
+              valor={Number(form.valores["precoVenda"] ?? 0)}
               erro={form.erros["precoVenda"]}
-              onChange={(v) => form.set("precoVenda", Number(v) || 0)}
+              onChange={(v) => form.set("precoVenda", v)}
             />
             <CampoTexto
               label="Quantidade"
