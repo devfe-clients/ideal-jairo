@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Car, Pencil, Plus, Search, ScanLine } from "lucide-react";
+import { Car, Pencil, Plus, Search, ScanLine, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -63,7 +63,7 @@ const vazio = {
 
 function Veiculos() {
   const { cliente: clienteFiltro } = Route.useSearch();
-  const { dados: veiculos, salvar } = useColecao<Veiculo>("veiculos");
+  const { dados: veiculos, salvar, remover } = useColecao<Veiculo>("veiculos");
   const { dados: clientes } = useColecao<Cliente>("clientes");
   const { dados: ordens } = useColecao<OrdemServico>("ordens");
   const { usuario } = useAuth();
@@ -99,6 +99,16 @@ function Veiculos() {
     const dados = form.validar();
     if (!dados) {
       toast.error("Confira os campos destacados.");
+      return;
+    }
+    const placaNova = dados.placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const duplicada = veiculos.find(
+      (v) => v.id !== editando?.id &&
+      v.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") === placaNova,
+    );
+    if (duplicada) {
+      const dono = clientes.find((c) => c.id === duplicada.clienteId);
+      toast.error(`Placa ${dados.placa} já cadastrada${dono ? ` para ${dono.nome}` : ""}.`);
       return;
     }
     const registro = {
@@ -199,6 +209,18 @@ function Veiculos() {
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setHistorico(v)}>
                       Histórico
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      title="Excluir veículo"
+                      onClick={async () => {
+                        await remover(v.id, usuario?.nome ?? "sistema");
+                        toast.success("Veículo excluído.");
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </CardContent>

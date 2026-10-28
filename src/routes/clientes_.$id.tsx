@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { NavigateOptions } from "@tanstack/react-router";
 import { useState } from "react";
-import { Car, FileText, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import { Car, FileText, MessageCircle, Pencil, Plus, Trash2, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -55,12 +55,14 @@ function DetalheCliente() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { dados: clientes, salvar, remover } = useColecao<Cliente>("clientes");
-  const { dados: veiculos } = useColecao<Veiculo>("veiculos");
+  const { dados: veiculos, salvar: salvarVeiculo, remover: removerVeiculo } = useColecao<Veiculo>("veiculos");
   const { dados: ordens, salvar: salvarOS } = useColecao<OrdemServico>("ordens");
   const { usuario, pode } = useAuth();
 const [editando, setEditando] = useState(false);
 const [dialogVeiculo, setDialogVeiculo] = useState<{ tipo: "os" | "orcamento" } | null>(null);
 const [veiculoSelecionado, setVeiculoSelecionado] = useState("");
+const [dialogTrocarDono, setDialogTrocarDono] = useState<Veiculo | null>(null);
+const [novoDonoId, setNovoDonoId] = useState("");
 const form = useFormularioZod(clienteSchema, vazio);
 
   const cliente = clientes.find((c) => c.id === id);
@@ -200,11 +202,38 @@ const form = useFormularioZod(clienteSchema, vazio);
             {meusVeiculos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum veículo cadastrado.</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
                 {meusVeiculos.map((v) => (
-                  <Badge key={v.id} variant="secondary" className="text-xs">
-                    {v.placa} · {v.marca} {v.modelo} ({v.ano})
-                  </Badge>
+                  <div key={v.id} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+                    <div>
+                      <span className="font-medium">{v.placa}</span>
+                      <span className="ml-2 text-muted-foreground">{v.marca} {v.modelo} ({v.ano})</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Transferir para outro cliente"
+                        onClick={() => { setNovoDonoId(""); setDialogTrocarDono(v); }}
+                      >
+                        <UserCheck className="h-3.5 w-3.5" />
+                      </Button>
+                      {pode("excluir") ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          title="Excluir veículo"
+                          onClick={async () => {
+                            await removerVeiculo(v.id, usuario?.uid ?? "sistema");
+                            toast.success("Veículo excluído.");
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -382,6 +411,49 @@ const form = useFormularioZod(clienteSchema, vazio);
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditando(false)}>Cancelar</Button>
             <Button onClick={submeter}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!dialogTrocarDono} onOpenChange={(v) => { if (!v) setDialogTrocarDono(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Transferir veículo</DialogTitle>
+            <DialogDescription>
+              Selecione o novo dono de <strong>{dialogTrocarDono?.placa} · {dialogTrocarDono?.modelo}</strong>. O histórico de OS permanece intacto.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={novoDonoId} onValueChange={setNovoDonoId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              {clientes
+                .filter((c) => c.id !== id)
+                .sort((a, b) => a.nome.localeCompare(b.nome))
+                .map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogTrocarDono(null)}>Cancelar</Button>
+            <Button
+              disabled={!novoDonoId}
+              onClick={async () => {
+                if (!dialogTrocarDono || !novoDonoId) return;
+                await salvarVeiculo(
+                  { ...dialogTrocarDono, clienteId: novoDonoId },
+                  usuario?.uid ?? "sistema",
+                );
+                toast.success("Veículo transferido com sucesso.");
+                setDialogTrocarDono(null);
+              }}
+            >
+              Transferir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
