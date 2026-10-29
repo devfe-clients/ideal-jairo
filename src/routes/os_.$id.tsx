@@ -157,6 +157,8 @@ function DetalheOS() {
   const [dialogFinalizar, setDialogFinalizar] = useState(false);
 const [ocultarVistoriaDoc, setOcultarVistoriaDoc] = useState(false);
   const [osParaFinalizar, setOsParaFinalizar] = useState<OrdemServico | null>(null);
+  const [jaPagou, setJaPagou] = useState(false);
+  const [formaPagamentoFinal, setFormaPagamentoFinal] = useState<"PIX" | "Dinheiro" | "Débito" | "Crédito" | "Boleto" | "Transferência">("PIX");
 const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
 const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
 const [dialogServicos, setDialogServicos] = useState(false);
@@ -848,7 +850,12 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     if (!osParaFinalizar) return;
     setDialogFinalizar(false);
     if (gerar) {
-      await salvarLancamento(contaReceberDaOS(osParaFinalizar), usuario?.uid ?? "sistema");
+      const hoje = new Date().toISOString().slice(0, 10);
+      const conta = contaReceberDaOS(osParaFinalizar);
+      const contaFinal = jaPagou
+        ? { ...conta, valorPago: conta.valor, pagoEm: hoje, formaPagamento: formaPagamentoFinal }
+        : conta;
+      await salvarLancamento(contaFinal, usuario?.uid ?? "sistema");
       const contasPagar = contasPagarMaoDeObra(osParaFinalizar, usuarios);
       for (const lp of contasPagar) {
         await salvarLancamento(lp, usuario?.uid ?? "sistema");
@@ -857,11 +864,13 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
         contasPagar.length > 0
           ? ` e ${contasPagar.length} conta(s) a pagar de mão de obra`
           : "";
-      toast.success(`OS finalizada. Conta a receber${msgPagar} gerada no financeiro.`);
+      const msgPago = jaPagou ? " e marcada como recebida" : "";
+      toast.success(`OS finalizada. Conta a receber${msgPagar} gerada${msgPago}.`);
     } else {
       toast.success("OS finalizada sem lançamentos no financeiro.");
     }
     setOsParaFinalizar(null);
+    setJaPagou(false);
   }
 
   async function converter() {
@@ -1774,13 +1783,35 @@ function BlocoChecklist({
             <p className="text-sm text-muted-foreground">
               Deseja lançar a cobrança no financeiro?
             </p>
+            <label className="flex items-center gap-2 rounded-md border border-border px-3 py-2 cursor-pointer hover:bg-muted/50">
+              <Checkbox
+                checked={jaPagou}
+                onCheckedChange={(v) => setJaPagou(Boolean(v))}
+              />
+              <span className="text-sm">Cliente já pagou agora</span>
+            </label>
+            {jaPagou ? (
+              <Select
+                value={formaPagamentoFinal}
+                onValueChange={(v) => setFormaPagamentoFinal(v as typeof formaPagamentoFinal)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Forma de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["PIX", "Dinheiro", "Débito", "Crédito", "Boleto", "Transferência"] as const).map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
           </div>
           <div className="flex flex-col gap-2 pt-2">
             <Button
               className="w-full bg-success text-success-foreground hover:bg-success/90"
               onClick={() => void confirmarGerarConta(true)}
             >
-              Salvar e gerar conta a receber
+              {jaPagou ? "Salvar e registrar como recebido" : "Salvar e gerar conta a receber"}
             </Button>
             <Button
               variant="outline"
