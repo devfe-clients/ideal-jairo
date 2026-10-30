@@ -105,6 +105,26 @@ export function contasPagarMaoDeObra(
   return lancamentos;
 }
 
+export function comprasDaOS(os: OrdemServico): import("./schemas").Compra[] {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return os.itens
+    .filter((i) => i.tipo === "peca" && i.origem === "autopecas" && i.fornecedorPeca)
+    .map((i) => ({
+      id: novoId(),
+      osId: os.id,
+      descricao: i.descricao,
+      fornecedor: i.fornecedorPeca ?? "",
+      quantidade: i.quantidade,
+      valorPago: i.custoUnitario,
+      valorVenda: i.valorUnitario,
+      status: "Pedido realizado" as const,
+      dataSolicitacao: hoje,
+      previsaoEntrega: "",
+      nota: "",
+      paraEstoque: false,
+    }));
+}
+
 export function mensagemOrcamento(
   os: OrdemServico,
   cliente?: Cliente,

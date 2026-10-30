@@ -45,6 +45,7 @@ import {
   ordemServicoSchema,
   type Checklist,
   type Cliente,
+  type Compra,
   type ItemOS,
   type Lancamento,
   type OrdemServico,
@@ -54,7 +55,7 @@ import {
   type Veiculo,
 } from "@/lib/schemas";
 import { brl, linkWhatsApp, itemTotal, totaisOS } from "@/lib/calc";
-import { contaReceberDaOS, contasPagarMaoDeObra, mensagemOrcamento, mensagemPronto, proximoNumero } from "@/lib/os-helpers";
+import { comprasDaOS, contaReceberDaOS, contasPagarMaoDeObra, mensagemOrcamento, mensagemPronto, proximoNumero } from "@/lib/os-helpers";
 import { ITENS_VISTORIA, NIVEIS_COMBUSTIVEL, OPCOES_VISTORIA, OPCOES_POR_ITEM, ITENS_INTERNOS } from "@/lib/empresa";
 import { MAX_FOTOS, uploadFoto, comprimirFoto, validarArquivoFoto } from "@/lib/fotos";
 import { useAuth } from "@/lib/auth";
@@ -151,6 +152,7 @@ function DetalheOS() {
   const { dados: pecas, salvar: salvarPeca, carregando: carregandoPecas } = useColecao<Peca>("pecas");
   const { dados: servicos, salvar: salvarServico, remover: removerServico } = useColecao<ServicoBase>("servicos");
   const { dados: lancamentos, salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
+  const { salvar: salvarCompra } = useColecao<Compra>("compras");
 
   const original = ordens.find((o) => o.id === id);
   const [osState, setOS] = useState<OrdemServico | null>(null);
@@ -289,6 +291,7 @@ async function criarPecaNoEstoque() {
         ...i,
         mecanicoId: i.mecanicoId ?? "",
         pecaId: i.pecaId ?? "",
+        fornecedorPeca: i.fornecedorPeca ?? "",
       })),
     };
 
@@ -838,6 +841,15 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     await salvarOS(atualizada, usuario?.uid ?? "sistema");
     setOS(atualizada);
     const jaTemLancamento = lancamentos.some((l) => l.osId === atualizada.id);
+
+    const novasCompras = comprasDaOS(atualizada);
+    for (const c of novasCompras) {
+      await salvarCompra(c, usuario?.uid ?? "sistema");
+    }
+    if (novasCompras.length > 0) {
+      toast.info(`${novasCompras.length} compra(s) de peças lançadas automaticamente.`);
+    }
+
     if (jaTemLancamento) {
       toast.success("OS finalizada. Conta a receber já existente foi mantida.");
     } else {
@@ -1591,7 +1603,10 @@ function BlocoChecklist({
                                   </label>
                                   <Select
                                     value={i.origem}
-                                    onValueChange={(v) => atualizarItem(i.id, "origem", v)}
+                                    onValueChange={(v) => {
+                                      atualizarItem(i.id, "origem", v);
+                                      if (v !== "autopecas") atualizarItem(i.id, "fornecedorPeca", "");
+                                    }}
                                   >
                                     <SelectTrigger className="h-7 w-44 text-xs">
                                       <SelectValue />
@@ -1602,6 +1617,14 @@ function BlocoChecklist({
                                       <SelectItem value="cliente">Fornecida pelo cliente</SelectItem>
                                     </SelectContent>
                                   </Select>
+                                  {i.origem === "autopecas" ? (
+                                    <input
+                                      className="h-7 w-36 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                                      placeholder="Nome da autopeças..."
+                                      value={i.fornecedorPeca ?? ""}
+                                      onChange={(e) => atualizarItem(i.id, "fornecedorPeca", e.target.value)}
+                                    />
+                                  ) : null}
                                   {pode("ver-margem") ? (
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <span>Custo:</span>

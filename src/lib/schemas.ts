@@ -105,6 +105,7 @@ export const itemSchema = z.object({
   mecanicoId: z.string().optional().or(z.literal("")),
   aprovado: z.boolean().default(true),
   pecaId: z.string().optional().or(z.literal("")),
+  fornecedorPeca: z.string().trim().max(80).optional().or(z.literal("")),
 });
 export type ItemOS = z.infer<typeof itemSchema>;
 
