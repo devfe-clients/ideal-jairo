@@ -982,23 +982,21 @@ function BlocoChecklist({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">{titulo}</CardTitle>
-              {c.dataHora !== undefined ? (
-                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                  <span className="text-xs text-muted-foreground">Registrada em</span>
-                  <input
-                    type="date"
-                    className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                    value={dataInput}
-                    onChange={(e) => salvarDataHora(e.target.value, horaInput)}
-                  />
-                  <input
-                    type="time"
-                    className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                    value={horaInput}
-                    onChange={(e) => salvarDataHora(dataInput, e.target.value)}
-                  />
-                </div>
-              ) : null}
+              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-muted-foreground">Registrada em</span>
+                <input
+                  type="date"
+                  className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                  value={dataInput}
+                  onChange={(e) => salvarDataHora(e.target.value, horaInput)}
+                />
+                <input
+                  type="time"
+                  className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                  value={horaInput}
+                  onChange={(e) => salvarDataHora(dataInput, e.target.value)}
+                />
+              </div>
             </div>
             {lado === "checklistSaida" && os.checklistEntrada ? (
               <Button
