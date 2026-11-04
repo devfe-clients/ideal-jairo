@@ -933,8 +933,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     valor: unknown,
   ) {
     const atual = os[lado] ?? checklistVazio;
-    const dataHora = atual.dataHora ?? new Date().toLocaleString("pt-BR");
-    atualizar(lado, { ...atual, [campo]: valor, dataHora });
+    atualizar(lado, { ...atual, [campo]: valor });
   }
 
 function BlocoChecklist({
@@ -1002,10 +1001,8 @@ function BlocoChecklist({
                   type="time"
                   className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
                   value={horaLocal}
-                  onChange={(e) => {
-                    setHoraLocal(e.target.value);
-                    salvarDataHora(dataLocal, e.target.value);
-                  }}
+                  onChange={(e) => setHoraLocal(e.target.value)}
+                  onBlur={() => salvarDataHora(dataLocal, horaLocal)}
                 />
               </div>
             </div>
