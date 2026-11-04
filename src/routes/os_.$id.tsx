@@ -967,10 +967,14 @@ function BlocoChecklist({
       const horaInput = timePart ? timePart.slice(0, 5) : "";
       return { dataInput, horaInput };
     };
-    const { dataInput, horaInput } = c.dataHora ? parsearDataHora(c.dataHora) : { dataInput: "", horaInput: "" };
+    const inicial = c.dataHora ? parsearDataHora(c.dataHora) : { dataInput: "", horaInput: "" };
+    const [dataLocal, setDataLocal] = useState(inicial.dataInput);
+    const [horaLocal, setHoraLocal] = useState(inicial.horaInput);
 
     function salvarDataHora(novaData: string, novaHora: string) {
-      if (!novaData && !novaHora) return;
+      setDataLocal(novaData);
+      setHoraLocal(novaHora);
+      if (!novaData) return;
       const [ano, mes, dia] = novaData.split("-");
       const dataFormatada = dia && mes && ano ? `${dia}/${mes}/${ano}` : "";
       const horaFormatada = novaHora || "00:00";
@@ -987,14 +991,14 @@ function BlocoChecklist({
                 <input
                   type="date"
                   className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                  value={dataInput}
-                  onChange={(e) => salvarDataHora(e.target.value, horaInput)}
+                  value={dataLocal}
+                  onChange={(e) => salvarDataHora(e.target.value, horaLocal)}
                 />
                 <input
                   type="time"
                   className="h-6 rounded border border-border bg-muted px-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                  value={horaInput}
-                  onChange={(e) => salvarDataHora(dataInput, e.target.value)}
+                  value={horaLocal}
+                  onChange={(e) => salvarDataHora(dataLocal, e.target.value)}
                 />
               </div>
             </div>
