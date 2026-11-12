@@ -229,6 +229,26 @@ function Veiculos() {
           })}
         </div>
       )}
+      <datalist id="marcas-lista">
+        {[...new Set(veiculos.map((v) => v.marca).filter(Boolean))].map((m) => (
+          <option key={m} value={m} />
+        ))}
+      </datalist>
+      <datalist id="modelos-lista">
+        {[...new Set(veiculos.map((v) => v.modelo).filter(Boolean))].map((m) => (
+          <option key={m} value={m} />
+        ))}
+      </datalist>
+      <datalist id="cores-lista">
+        {[...new Set(veiculos.map((v) => v.cor ?? "").filter(Boolean))].map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+      <datalist id="motores-lista">
+        {[...new Set(veiculos.map((v) => v.motor ?? "").filter(Boolean))].map((m) => (
+          <option key={m} value={m} />
+        ))}
+      </datalist>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -241,55 +261,12 @@ function Veiculos() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo label="Cliente" erro={form.erros["clienteId"]} className="sm:col-span-2">
-              <Select
-                value={String(form.valores["clienteId"] ?? "")}
-                onValueChange={(v) => form.set("clienteId", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              ...
             </Campo>
 
             <div className="flex items-end gap-2">
-              <CampoTexto
-                label="Placa"
-                className="flex-1"
-                valor={formatarPlaca(String(form.valores["placa"] ?? ""))}
-                erro={form.erros["placa"]}
-                onChange={(v) => form.set("placa", formatarPlaca(v))}
-              />
-              <Button type="button" variant="outline" onClick={consultarPlaca}>
-                <ScanLine className="mr-1 h-4 w-4" /> Consultar
-              </Button>
+              ...
             </div>
-            <datalist id="marcas-lista">
-              {[...new Set(veiculos.map((v) => v.marca).filter(Boolean))].map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
-            <datalist id="modelos-lista">
-              {[...new Set(veiculos.map((v) => v.modelo).filter(Boolean))].map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
-            <datalist id="cores-lista">
-              {[...new Set(veiculos.map((v) => v.cor ?? "").filter(Boolean))].map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-            <datalist id="motores-lista">
-              {[...new Set(veiculos.map((v) => v.motor ?? "").filter(Boolean))].map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
             <Campo label="Marca" erro={form.erros["marca"]}>
               <input
                 list="marcas-lista"
