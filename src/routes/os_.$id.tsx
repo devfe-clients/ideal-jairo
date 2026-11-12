@@ -1394,9 +1394,16 @@ function BlocoChecklist({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+<CardContent className="p-0">
+  {os.itens.filter((i) => i.tipo === "servico").map((i) => (
+    <datalist key={i.id} id={`servicos-${i.id}`}>
+      {servicos.map((s) => (
+        <option key={s.id} value={s.nome} />
+      ))}
+    </datalist>
+  ))}
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Serviço</th>
@@ -1418,17 +1425,12 @@ function BlocoChecklist({
                       os.itens
                         .filter((i) => i.tipo === "servico")
                         .map((i) => (
-                          <tr key={i.id} className="border-b border-border last:border-0">
-                            <td className="px-4 py-2">
-                              <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <datalist id={`servicos-${i.id}`}>
-                                    {servicos.map((s) => (
-                                      <option key={s.id} value={s.nome} />
-                                    ))}
-                                  </datalist>
-                                  <input
-                                    list={`servicos-${i.id}`}
+<tr key={i.id} className="border-b border-border last:border-0">
+            <td className="px-4 py-2">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    list={`servicos-${i.id}`}
                                     className="flex-1 min-w-0 h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
                                     placeholder="Selecione ou descreva o serviço..."
                                     value={i.descricao}
@@ -1541,6 +1543,16 @@ function BlocoChecklist({
               </div>
             </CardHeader>
             <CardContent className="p-0">
+              {os.itens.filter((i) => i.tipo === "peca").map((i) => (
+                <datalist key={i.id} id={`pecas-${i.id}`}>
+                  {pecas
+                    .slice()
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((x) => (
+                      <option key={x.id} value={x.nome} />
+                    ))}
+                </datalist>
+              ))}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -1564,20 +1576,12 @@ function BlocoChecklist({
                       os.itens
                         .filter((i) => i.tipo === "peca")
                         .map((i) => (
-                          <tr key={i.id} className="border-b border-border last:border-0">
-                            <td className="px-4 py-2">
-                              <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <datalist id={`pecas-${i.id}`}>
-                                    {pecas
-                                      .slice()
-                                      .sort((a, b) => a.nome.localeCompare(b.nome))
-                                      .map((x) => (
-                                        <option key={x.id} value={x.nome} />
-                                      ))}
-                                  </datalist>
-                                  <input
-                                    list={`pecas-${i.id}`}
+<tr key={i.id} className="border-b border-border last:border-0">
+            <td className="px-4 py-2">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    list={`pecas-${i.id}`}
                                     className="flex-1 min-w-0 h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
                                     placeholder="Selecione do estoque ou digite..."
                                     value={i.descricao}
