@@ -261,11 +261,38 @@ function Veiculos() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo label="Cliente" erro={form.erros["clienteId"]} className="sm:col-span-2">
-              ...
+              <Select
+                value={String(form.valores["clienteId"] ?? "")}
+                onValueChange={(v) => form.set("clienteId", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Campo>
 
             <div className="flex items-end gap-2">
-              ...
+              <CampoTexto
+                label="Placa"
+                valor={String(form.valores["placa"] ?? "").toUpperCase()}
+                erro={form.erros["placa"]}
+                onChange={(v) => form.set("placa", v.toUpperCase())}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="mb-[1px] shrink-0"
+                onClick={() => void consultarPlaca()}
+              >
+                Consultar
+              </Button>
             </div>
             <Campo label="Marca" erro={form.erros["marca"]}>
               <input
