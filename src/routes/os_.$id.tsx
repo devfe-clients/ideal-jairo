@@ -30,13 +30,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { Campo, CampoArea, CampoTexto, MoneyInput, Vazio } from "@/components/form-kit";
 import { useColecao, novoId } from "@/lib/db";
 import {
@@ -156,15 +169,19 @@ function DetalheOS() {
 
   const original = ordens.find((o) => o.id === id);
   const [osState, setOS] = useState<OrdemServico | null>(null);
-  const [dialogFinalizar, setDialogFinalizar] = useState(false);
+const [dialogFinalizar, setDialogFinalizar] = useState(false);
+const [comboClienteAberto, setComboClienteAberto] = useState(false);
+const [buscaCliente, setBuscaCliente] = useState("");
 const [ocultarVistoriaDoc, setOcultarVistoriaDoc] = useState(false);
   const [osParaFinalizar, setOsParaFinalizar] = useState<OrdemServico | null>(null);
   const [jaPagou, setJaPagou] = useState(false);
   const [formaPagamentoFinal, setFormaPagamentoFinal] = useState<"PIX" | "Dinheiro" | "Débito" | "Crédito" | "Boleto" | "Transferência">("PIX");
-const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
-const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
 const [dialogServicos, setDialogServicos] = useState(false);
 const [novoServicoNome, setNovoServicoNome] = useState("");
+const [buscaServico, setBuscaServico] = useState<Record<string, string>>({});
+const [comboServicoAberto, setComboServicoAberto] = useState<Record<string, boolean>>({});
+const [buscaPeca, setBuscaPeca] = useState<Record<string, string>>({});
+const [comboPecaAberto, setComboPecaAberto] = useState<Record<string, boolean>>({});
 const [modalPeca, setModalPeca] = useState<{
   itemId: string;
   nome: string;
@@ -1219,27 +1236,56 @@ function BlocoChecklist({
           <Card>
             <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Cliente" className="sm:col-span-2 lg:col-span-1">
-                <datalist id="clientes-os">
-                  {clientes
-                    .slice()
-                    .sort((a, b) => a.nome.localeCompare(b.nome))
-                    .map((c) => (
-                      <option key={c.id} value={c.nome} />
-                    ))}
-                </datalist>
-                <input
-                  list="clientes-os"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
-                  placeholder="Digite o nome do cliente..."
-                  defaultValue={clientes.find((c) => c.id === os.clienteId)?.nome ?? ""}
-                  onChange={(e) => {
-                    const encontrado = clientes.find((c) => c.nome === e.target.value);
-                    if (encontrado) {
-                      atualizar("clienteId", encontrado.id);
-                      atualizar("veiculoId", "");
-                    }
-                  }}
-                />
+                <Popover open={comboClienteAberto} onOpenChange={setComboClienteAberto}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {clientes.find((c) => c.id === os.clienteId)?.nome ?? "Selecione o cliente"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Buscar cliente..."
+                        value={buscaCliente}
+                        onValueChange={setBuscaCliente}
+                      />
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup className="max-h-60 overflow-y-auto">
+                        {clientes
+                          .filter((c) =>
+                            c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
+                          )
+                          .slice()
+                          .sort((a, b) => a.nome.localeCompare(b.nome))
+                          .map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.nome}
+                              onSelect={() => {
+                                atualizar("clienteId", c.id);
+                                atualizar("veiculoId", "");
+                                setBuscaCliente("");
+                                setComboClienteAberto(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  os.clienteId === c.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {c.nome}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </Campo>
               <Campo label="Veículo" className="sm:col-span-2 lg:col-span-2">
                 {(() => {
@@ -1402,13 +1448,7 @@ function BlocoChecklist({
               </div>
             </CardHeader>
 <CardContent className="p-0">
-  {os.itens.filter((i) => i.tipo === "servico").map((i) => (
-    <datalist key={i.id} id={`servicos-${i.id}`}>
-      {servicos.map((s) => (
-        <option key={s.id} value={s.nome} />
-      ))}
-    </datalist>
-  ))}
+
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
                   <thead>
@@ -1436,29 +1476,95 @@ function BlocoChecklist({
             <td className="px-4 py-2">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <input
-                    list={`servicos-${i.id}`}
-                                    className="flex-1 min-w-0 h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
-                                    placeholder="Selecione ou descreva o serviço..."
-                                    value={i.descricao}
-                                    onChange={(e) => {
-                                      atualizarItem(i.id, "descricao", e.target.value);
-                                      const s = servicos.find((x) => x.nome === e.target.value);
-                                      if (s) aplicarValorBase(i.id, "servico", s.nome);
-                                    }}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    title="Criar novo serviço"
-                                    onClick={() =>
-                                      setModalNovoServico({ itemId: i.id, nome: i.descricao, valor: "", custo: "", desconto: "" })
-                                    }
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
+                  <Popover
+                    open={comboServicoAberto[i.id] ?? false}
+                    onOpenChange={(v) =>
+                      setComboServicoAberto((prev) => ({ ...prev, [i.id]: v }))
+                    }
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="flex-1 min-w-0 h-8 justify-between font-normal text-sm"
+                      >
+                        <span className="truncate">
+                          {i.descricao || "Selecione ou descreva o serviço..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Buscar serviço..."
+                          value={buscaServico[i.id] ?? ""}
+                          onValueChange={(v) =>
+                            setBuscaServico((prev) => ({ ...prev, [i.id]: v }))
+                          }
+                        />
+                        <CommandEmpty>
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm text-primary hover:bg-muted"
+                            onClick={() => {
+                              const texto = buscaServico[i.id] ?? "";
+                              atualizarItem(i.id, "descricao", texto);
+                              setBuscaServico((prev) => ({ ...prev, [i.id]: "" }));
+                              setComboServicoAberto((prev) => ({ ...prev, [i.id]: false }));
+                            }}
+                          >
+                            Usar "{buscaServico[i.id]}" como texto livre
+                          </button>
+                        </CommandEmpty>
+                        <CommandGroup className="max-h-52 overflow-y-auto">
+                          {servicos
+                            .filter((s) =>
+                              s.nome
+                                .toLowerCase()
+                                .includes((buscaServico[i.id] ?? "").toLowerCase())
+                            )
+                            .sort((a, b) => a.nome.localeCompare(b.nome))
+                            .map((s) => (
+                              <CommandItem
+                                key={s.id}
+                                value={s.nome}
+                                onSelect={() => {
+                                  aplicarValorBase(i.id, "servico", s.nome);
+                                  setBuscaServico((prev) => ({ ...prev, [i.id]: "" }));
+                                  setComboServicoAberto((prev) => ({ ...prev, [i.id]: false }));
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    i.descricao === s.nome ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <span className="flex-1">{s.nome}</span>
+                                {s.valorPadrao ? (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    {brl(s.valorPadrao)}
+                                  </span>
+                                ) : null}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    title="Criar novo serviço"
+                    onClick={() =>
+                      setModalNovoServico({ itemId: i.id, nome: i.descricao, valor: "", custo: "", desconto: "" })
+                    }
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
                                 <div className="flex items-center gap-3 flex-wrap">
                                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Checkbox
@@ -1550,16 +1656,7 @@ function BlocoChecklist({
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {os.itens.filter((i) => i.tipo === "peca").map((i) => (
-                <datalist key={i.id} id={`pecas-${i.id}`}>
-                  {pecas
-                    .slice()
-                    .sort((a, b) => a.nome.localeCompare(b.nome))
-                    .map((x) => (
-                      <option key={x.id} value={x.nome} />
-                    ))}
-                </datalist>
-              ))}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -1587,29 +1684,95 @@ function BlocoChecklist({
             <td className="px-4 py-2">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <input
-                    list={`pecas-${i.id}`}
-                                    className="flex-1 min-w-0 h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
-                                    placeholder="Selecione do estoque ou digite..."
-                                    value={i.descricao}
-                                    onChange={(e) => {
-                                      atualizarItem(i.id, "descricao", e.target.value);
-                                      const p = pecas.find((x) => x.nome === e.target.value);
-                                      if (p) aplicarValorBase(i.id, "peca", p.id);
-                                    }}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    title="Criar nova peça no estoque"
-                                    onClick={() =>
-                                      setModalPeca({ itemId: i.id, nome: i.descricao, custo: "", venda: "", margem: "" })
-                                  }
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
+                  <Popover
+                    open={comboPecaAberto[i.id] ?? false}
+                    onOpenChange={(v) =>
+                      setComboPecaAberto((prev) => ({ ...prev, [i.id]: v }))
+                    }
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="flex-1 min-w-0 h-7 justify-between font-normal text-xs"
+                      >
+                        <span className="truncate">
+                          {i.descricao || "Selecione do estoque ou digite..."}
+                        </span>
+                        <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Buscar peça..."
+                          value={buscaPeca[i.id] ?? ""}
+                          onValueChange={(v) =>
+                            setBuscaPeca((prev) => ({ ...prev, [i.id]: v }))
+                          }
+                        />
+                        <CommandEmpty>
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm text-primary hover:bg-muted"
+                            onClick={() => {
+                              const texto = buscaPeca[i.id] ?? "";
+                              atualizarItem(i.id, "descricao", texto);
+                              setBuscaPeca((prev) => ({ ...prev, [i.id]: "" }));
+                              setComboPecaAberto((prev) => ({ ...prev, [i.id]: false }));
+                            }}
+                          >
+                            Usar "{buscaPeca[i.id]}" como texto livre
+                          </button>
+                        </CommandEmpty>
+                        <CommandGroup className="max-h-52 overflow-y-auto">
+                          {pecas
+                            .filter((p) =>
+                              p.nome
+                                .toLowerCase()
+                                .includes((buscaPeca[i.id] ?? "").toLowerCase())
+                            )
+                            .sort((a, b) => a.nome.localeCompare(b.nome))
+                            .map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={p.nome}
+                                onSelect={() => {
+                                  aplicarValorBase(i.id, "peca", p.id);
+                                  setBuscaPeca((prev) => ({ ...prev, [i.id]: "" }));
+                                  setComboPecaAberto((prev) => ({ ...prev, [i.id]: false }));
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    i.pecaId === p.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <span className="flex-1">{p.nome}</span>
+                                {p.quantidade <= p.estoqueMinimo ? (
+                                  <span className="ml-2 text-xs text-destructive">
+                                    estoque baixo
+                                  </span>
+                                ) : null}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    title="Criar nova peça no estoque"
+                    onClick={() =>
+                      setModalPeca({ itemId: i.id, nome: i.descricao, custo: "", venda: "", margem: "" })
+                    }
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
                                 <div className="flex items-center gap-3 flex-wrap">
                                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Checkbox
