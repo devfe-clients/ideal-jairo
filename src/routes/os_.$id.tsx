@@ -1242,24 +1242,31 @@ function BlocoChecklist({
                 />
               </Campo>
               <Campo label="Veículo" className="sm:col-span-2 lg:col-span-2">
-                <Select
-                  value={os.veiculoId}
-                  onValueChange={(v) => atualizar("veiculoId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o veículo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {veiculos
-                      .filter((v) => !os.clienteId || v.clienteId === os.clienteId)
-                      .sort((a, b) => `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`))
-                      .map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          {v.placa} · {v.marca} {v.modelo} ({v.ano})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  const veiculosDoCliente = veiculos
+                    .filter((v) => !os.clienteId || v.clienteId === os.clienteId)
+                    .sort((a, b) => `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`));
+                  const veiculoId =
+                    os.veiculoId ||
+                    (veiculosDoCliente.length === 1 ? veiculosDoCliente[0]!.id : "");
+                  return (
+                    <Select
+                      value={veiculoId}
+                      onValueChange={(v) => atualizar("veiculoId", v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o veículo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {veiculosDoCliente.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.placa} · {v.marca} {v.modelo} ({v.ano})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                })()}
               </Campo>
               <Campo label="Status">
                 <Select value={os.status} onValueChange={(v) => atualizar("status", v)}>
