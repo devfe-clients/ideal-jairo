@@ -62,7 +62,7 @@ const vazio = {
   clienteId: "",
 };
 
-type StatusFiltro = "Todos" | "Em aberto" | "Em atraso" | "Pago parcial" | "Pago" | "A pagar";
+type StatusFiltro = "Todos" | "Nao pagos" | "Em aberto" | "Em atraso" | "Pago parcial" | "Pago" | "A pagar";
 
 function statusLancamento(l: Lancamento): string {
   const vp = l.valorPago ?? 0;
@@ -104,6 +104,7 @@ function FinanceiroPage() {
       .filter((l) => filtroCategoria === "Todas" || l.categoria === filtroCategoria)
       .filter((l) => {
         if (filtroStatus === "Todos") return true;
+        if (filtroStatus === "Nao pagos") return statusLancamento(l) !== "Pago";
         if (filtroStatus === "A pagar") return l.tipo === "pagar";
         return statusLancamento(l) === filtroStatus;
       })
@@ -357,7 +358,10 @@ function FinanceiroPage() {
           <select
             className="h-9 rounded-md border border-input bg-background px-2 text-sm"
             value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
+            onChange={(e) => {
+              setFiltroTipo(e.target.value);
+              setFiltroStatus("Todos");
+            }}
           >
             <option value="Todos">Todos</option>
             <option value="receber">A receber</option>
@@ -380,6 +384,7 @@ function FinanceiroPage() {
             onChange={(e) => setFiltroStatus(e.target.value as StatusFiltro)}
           >
             <option value="Todos">Todos os status</option>
+            <option value="Nao pagos">Não pagos</option>
             <option value="Em aberto">Em aberto</option>
             <option value="Em atraso">Em atraso</option>
             <option value="Pago parcial">Pago parcial</option>
