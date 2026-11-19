@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Car, Pencil, Plus, Search, ScanLine, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -29,7 +29,7 @@ import { veiculoSchema, type Cliente, type OrdemServico, type Veiculo } from "@/
 import { brl, dataBR, formatarPlaca, totaisOS } from "@/lib/calc";
 import { useAuth } from "@/lib/auth";
 
-const busca = z.object({ cliente: z.string().optional() });
+const busca = z.object({ cliente: z.string().optional(), novo: z.string().optional() });
 
 export const Route = createFileRoute("/veiculos")({
   validateSearch: busca,
@@ -62,7 +62,13 @@ const vazio = {
 };
 
 function Veiculos() {
-  const { cliente: clienteFiltro } = Route.useSearch();
+  const { cliente: clienteFiltro, novo } = Route.useSearch();
+
+  useEffect(() => {
+    if (novo === "1" && clienteFiltro) {
+      abrirNovo();
+    }
+  }, []);
   const { dados: veiculos, salvar, remover } = useColecao<Veiculo>("veiculos");
   const { dados: clientes } = useColecao<Cliente>("clientes");
   const { dados: ordens } = useColecao<OrdemServico>("ordens");

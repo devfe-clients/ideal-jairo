@@ -131,7 +131,7 @@ const form = useFormularioZod(clienteSchema, vazio);
               <Car className="mr-1 h-4 w-4" /> Veículos
             </Link>
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate({ to: "/veiculos", search: { cliente: id } } as NavigateOptions)}>
+          <Button size="sm" variant="outline" onClick={() => navigate({ to: "/veiculos", search: { cliente: id, novo: "1" } } as NavigateOptions)}>
             <Plus className="mr-1 h-4 w-4" /> Cadastrar veículo
           </Button>
           <Button size="sm" variant="secondary" onClick={() => void criarOS("os")}>
@@ -192,7 +192,7 @@ const form = useFormularioZod(clienteSchema, vazio);
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Veículos ({meusVeiculos.length})</CardTitle>
               <Button size="sm" variant="outline" asChild>
-                <Link to="/veiculos" search={{ cliente: id } as Record<string, string>}>
+                <Link to="/veiculos" search={{ cliente: id, novo: "1" } as Record<string, string>}>
                   <Plus className="mr-1 h-3.5 w-3.5" /> Cadastrar veículo
                 </Link>
               </Button>
