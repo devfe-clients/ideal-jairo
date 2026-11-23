@@ -1,4 +1,13 @@
 const logo = { url: "/logo-ideal-jairo.jpg" };
+
+const estiloImpressao = `
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { margin: 0 !important; padding: 0 !important; }
+  .print-sheet { max-width: 100% !important; padding: 8mm !important; margin: 0 !important; }
+  header { page-break-inside: avoid; }
+}
+`;
 import { EMPRESA } from "@/lib/empresa";
 import { brl, dataBR, formatarDoc, formatarTelefone, itemTotal, totaisOS } from "@/lib/calc";
 import type { Checklist, Cliente, OrdemServico, Usuario, Veiculo } from "@/lib/schemas";
@@ -153,6 +162,7 @@ return (
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white p-6 text-black">
+      <style dangerouslySetInnerHTML={{ __html: estiloImpressao }} />
       <header className="flex items-start justify-between gap-4 border-b-2 border-black pb-3">
         <div className="flex items-center gap-3">
           <img src={logo.url} alt="Ideal Jairo" className="h-14 w-14 rounded object-cover" />
