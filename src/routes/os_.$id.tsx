@@ -941,7 +941,17 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
       novas.push(url);
       toast.success(`${file.name} enviada (${tamanhoKb} KB)`);
     }
-    atualizar(lado, { ...atual, fotos: [...atual.fotos, ...novas] });
+    const agora = new Date();
+    const dia = String(agora.getDate()).padStart(2, "0");
+    const mes = String(agora.getMonth() + 1).padStart(2, "0");
+    const hora = String(agora.getHours()).padStart(2, "0");
+    const min = String(agora.getMinutes()).padStart(2, "0");
+    const dataHoraAuto = `${dia}/${mes}/${agora.getFullYear()} ${hora}:${min}`;
+    atualizar(lado, {
+      ...atual,
+      fotos: [...atual.fotos, ...novas],
+      dataHora: atual.dataHora || dataHoraAuto,
+    });
   }
 
   function atualizarChecklist(
@@ -950,7 +960,17 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     valor: unknown,
   ) {
     const atual = os[lado] ?? checklistVazio;
-    atualizar(lado, { ...atual, [campo]: valor });
+    const agora = new Date();
+    const dia = String(agora.getDate()).padStart(2, "0");
+    const mes = String(agora.getMonth() + 1).padStart(2, "0");
+    const hora = String(agora.getHours()).padStart(2, "0");
+    const min = String(agora.getMinutes()).padStart(2, "0");
+    const dataHoraAuto = `${dia}/${mes}/${agora.getFullYear()} ${hora}:${min}`;
+    atualizar(lado, {
+      ...atual,
+      dataHora: atual.dataHora || dataHoraAuto,
+      [campo]: valor,
+    });
   }
 
 function BlocoChecklist({
