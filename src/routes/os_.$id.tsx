@@ -164,7 +164,7 @@ function DetalheOS() {
   const { dados: usuarios } = useColecao<Usuario>("usuarios");
   const { dados: pecas, salvar: salvarPeca, carregando: carregandoPecas } = useColecao<Peca>("pecas");
   const { dados: servicos, salvar: salvarServico, remover: removerServico } = useColecao<ServicoBase>("servicos");
-  const { dados: lancamentos, salvar: salvarLancamento } = useColecao<Lancamento>("lancamentos");
+  const { dados: lancamentos, salvar: salvarLancamento, remover: removerLancamento } = useColecao<Lancamento>("lancamentos");
   const { salvar: salvarCompra } = useColecao<Compra>("compras");
 
   const original = ordens.find((o) => o.id === id);
@@ -815,19 +815,29 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     setOS(osSanitizado);
 
     if (osSanitizado.status === "Finalizado" || osSanitizado.status === "Entregue/Fechado") {
-      const lancamentoVinculado = lancamentos.find((l) => l.osId === osSanitizado.id);
-      if (lancamentoVinculado) {
+      const contasReceber = lancamentos.filter(
+        (l) => l.osId === osSanitizado.id && l.tipo === "receber",
+      );
+      const [principal, ...duplicatas] = contasReceber;
+      if (principal) {
         const novoValor = totaisOS(osSanitizado, true).total;
-        if (lancamentoVinculado.valor !== novoValor) {
+        if (principal.valor !== novoValor) {
           try {
             await salvarLancamento(
-              { ...lancamentoVinculado, valor: novoValor },
+              { ...principal, valor: novoValor },
               usuario?.uid ?? "sistema",
             );
           } catch (err) {
             console.error("Erro ao atualizar lançamento:", err);
           }
           if (!silencioso) toast.info("Conta a receber atualizada automaticamente.");
+        }
+        for (const dup of duplicatas) {
+          try {
+            await removerLancamento(dup.id, usuario?.uid ?? "sistema");
+          } catch (err) {
+            console.error("Erro ao remover duplicata:", err);
+          }
         }
       }
     }
@@ -857,7 +867,9 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     }
     await salvarOS(atualizada, usuario?.uid ?? "sistema");
     setOS(atualizada);
-    const lancamentoVinculado = lancamentos.find((l) => l.osId === atualizada.id);
+    const lancamentoVinculado = lancamentos.find(
+      (l) => l.osId === atualizada.id && l.tipo === "receber",
+    );
 
     const novasCompras = comprasDaOS(atualizada);
     for (const c of novasCompras) {
@@ -888,6 +900,15 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     if (!osParaFinalizar) return;
     setDialogFinalizar(false);
     if (gerar) {
+      const jaExiste = lancamentos.find(
+        (l) => l.osId === osParaFinalizar.id && l.tipo === "receber",
+      );
+      if (jaExiste) {
+        toast.info("Conta a receber já existe no financeiro.");
+        setOsParaFinalizar(null);
+        setJaPagou(false);
+        return;
+      }
       const hoje = new Date().toISOString().slice(0, 10);
       const conta = contaReceberDaOS(osParaFinalizar);
       const contaFinal = jaPagou
@@ -1995,7 +2016,15 @@ function BlocoChecklist({
         <ImpressaoOS os={os} cliente={cliente} veiculo={veiculo} mecanicos={usuarios} />
       </div>
 
-<Dialog open={dialogFinalizar} onOpenChange={() => {}}>
+<Dialog
+  open={dialogFinalizar}
+  onOpenChange={(aberto) => {
+    if (!aberto) {
+      setDialogFinalizar(false);
+      setOsParaFinalizar(null);
+    }
+  }}
+>
   <DialogContent
     className="sm:max-w-md"
     onInteractOutside={(e) => {
