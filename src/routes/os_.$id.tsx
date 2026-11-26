@@ -857,7 +857,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
     }
     await salvarOS(atualizada, usuario?.uid ?? "sistema");
     setOS(atualizada);
-    const jaTemLancamento = lancamentos.some((l) => l.osId === atualizada.id);
+    const lancamentoVinculado = lancamentos.find((l) => l.osId === atualizada.id);
 
     const novasCompras = comprasDaOS(atualizada);
     for (const c of novasCompras) {
@@ -867,8 +867,17 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
       toast.info(`${novasCompras.length} compra(s) de peças lançadas automaticamente.`);
     }
 
-    if (jaTemLancamento) {
-      toast.success("OS finalizada. Conta a receber já existente foi mantida.");
+    if (lancamentoVinculado) {
+      const novoValor = totaisOS(atualizada, true).total;
+      if (lancamentoVinculado.valor !== novoValor) {
+        await salvarLancamento(
+          { ...lancamentoVinculado, valor: novoValor },
+          usuario?.uid ?? "sistema",
+        );
+        toast.success("OS finalizada. Conta a receber atualizada para o novo valor.");
+      } else {
+        toast.success("OS finalizada. Conta a receber já existente foi mantida.");
+      }
     } else {
       setOsParaFinalizar(atualizada);
       setDialogFinalizar(true);
@@ -1989,8 +1998,11 @@ function BlocoChecklist({
 <Dialog open={dialogFinalizar} onOpenChange={() => {}}>
   <DialogContent
     className="sm:max-w-md"
-    onInteractOutside={(e) => e.preventDefault()}
-    onEscapeKeyDown={(e) => e.preventDefault()}
+    onInteractOutside={(e) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-radix-popper-content-wrapper]")) return;
+      e.preventDefault();
+    }}
   >
           <DialogHeader>
             <DialogTitle>Finalizar OS</DialogTitle>
