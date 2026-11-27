@@ -66,7 +66,7 @@ export function calcularTotais(
   };
 }
 
-export const totaisOS = (os: OrdemServico, apenasAprovados = false) =>
+export const totaisOS = (os: OrdemServico, apenasAprovados = true) =>
   calcularTotais(os.itens, os.descontoGeral, apenasAprovados);
 
 export const soDigitos = (v: string) => (v || "").replace(/\D/g, "");

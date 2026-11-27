@@ -179,7 +179,7 @@ function Veiculos() {
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtrados.map((v) => {
             const lista = osDoVeiculo(v.id);
-            const gasto = lista.reduce((s, o) => s + totaisOS(o).total, 0);
+            const gasto = lista.reduce((s, o) => s + totaisOS(o, true).total, 0);
             return (
               <Card key={v.id}>
                 <CardContent className="space-y-3 p-4">
@@ -388,7 +388,7 @@ function Veiculos() {
             ) : (
               historico &&
               osDoVeiculo(historico.id).map((o) => {
-                const t = totaisOS(o);
+                const t = totaisOS(o, true);
                 return (
                   <div key={o.id} className="rounded-md border border-border p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -399,7 +399,7 @@ function Veiculos() {
                       {dataBR(o.emissao)} · {o.km.toLocaleString("pt-BR")} km
                     </p>
                     <ul className="mt-2 space-y-1 text-sm">
-                      {o.itens.map((i) => (
+                      {o.itens.filter((i) => i.aprovado).map((i) => (
                         <li key={i.id} className="flex justify-between gap-2">
                           <span className="truncate">
                             {i.tipo === "peca" ? "Peça" : "Serviço"} · {i.descricao}
