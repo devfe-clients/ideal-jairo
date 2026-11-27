@@ -42,6 +42,7 @@ const vazio = {
   nome: "",
   cpfCnpj: "",
   telefone: "",
+  telefoneSecundario: "",
   email: "",
   cep: "",
   endereco: "",
@@ -70,6 +71,7 @@ function Clientes() {
       (c) =>
         c.nome.toLowerCase().includes(t) ||
         (d && soDigitos(c.telefone).includes(d)) ||
+        (d && c.telefoneSecundario && soDigitos(c.telefoneSecundario).includes(d)) ||
         (d && c.cpfCnpj && soDigitos(c.cpfCnpj).includes(d)) ||
         veiculos.some((v) => v.clienteId === c.id && v.placa.toLowerCase().includes(t)),
     );
@@ -147,6 +149,11 @@ function Clientes() {
                       <p className="text-xs text-muted-foreground">
                         {formatarTelefone(c.telefone)}
                       </p>
+                      {c.telefoneSecundario ? (
+                        <p className="text-xs text-muted-foreground">
+                          Tel. 2: {formatarTelefone(c.telefoneSecundario)}
+                        </p>
+                      ) : null}
                     </div>
                     {c.consentimentoLgpd ? (
                       <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -188,6 +195,20 @@ function Clientes() {
                         <MessageCircle className="mr-1 h-3.5 w-3.5" /> WhatsApp
                       </a>
                     </Button>
+                    {c.telefoneSecundario ? (
+                      <Button size="sm" variant="outline" asChild>
+                        <a
+                          href={linkWhatsApp(
+                            c.telefoneSecundario,
+                            `Olá ${c.nome.split(" ")[0]}, aqui é da Oficina Ideal Jairo.`,
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <MessageCircle className="mr-1 h-3.5 w-3.5" /> WhatsApp 2
+                        </a>
+                      </Button>
+                    ) : null}
                     <Button size="sm" variant="ghost" asChild>
                       <Link to="/veiculos" search={{ cliente: c.id }}>
                         Veículos
@@ -242,6 +263,12 @@ function Clientes() {
               valor={formatarTelefone(String(form.valores["telefone"] ?? ""))}
               erro={form.erros["telefone"]}
               onChange={(v) => form.set("telefone", v)}
+            />
+            <CampoTexto
+              label="Telefone 2 / Recado (opcional)"
+              valor={formatarTelefone(String(form.valores["telefoneSecundario"] ?? ""))}
+              erro={form.erros["telefoneSecundario"]}
+              onChange={(v) => form.set("telefoneSecundario", v)}
             />
             <CampoTexto
               label="E-mail (opcional)"

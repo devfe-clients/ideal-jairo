@@ -329,7 +329,7 @@ async function criarPecaNoEstoque() {
   const veiculo = veiculos.find((v) => v.id === osState?.veiculoId);
   const mecanicos = usuarios.filter((u) => u.perfil === "Mecânico" || u.perfil === "Responsável técnico");
   const totais = useMemo(
-    () => (osState ? totaisOS(osState, osState.tipo === "orcamento") : null),
+    () => (osState ? totaisOS(osState, true) : null),
     [osState],
   );
 
@@ -341,8 +341,8 @@ async function criarPecaNoEstoque() {
     const v = veiculos.find((x) => x.id === os.veiculoId);
     const { brl, dataBR, formatarDoc, formatarTelefone, itemTotal, totaisOS } = await import("@/lib/calc");
     const { EMPRESA } = await import("@/lib/empresa");
-    const t = totaisOS(os, os.tipo === "orcamento");
-    const itens = os.tipo === "orcamento" ? os.itens.filter((i) => i.aprovado) : os.itens;
+    const t = totaisOS(os, true);
+    const itens = os.itens.filter((i) => i.aprovado);
     const servicosImpressao = itens.filter((i) => i.tipo === "servico");
     const pecasImpressao = itens.filter((i) => i.tipo === "peca");
     const nomeMec = (id?: string) => usuarios.find((m) => m.id === id)?.nome ?? "";
@@ -469,7 +469,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
     <div style="border:1px solid #000;padding:6px">
       <p style="font-weight:bold;text-transform:uppercase">Dados do cliente</p>
-      ${c ? `<p>${c.nome}</p><p>CPF/CNPJ: ${formatarDoc(c.cpfCnpj ?? "")}</p><p>Contato: ${formatarTelefone(c.telefone)}</p>${c.endereco ? `<p>${c.endereco}${c.numero ? `, ${c.numero}` : ""}${c.bairro ? ` - ${c.bairro}` : ""}${c.cidade ? ` - ${c.cidade}/${c.uf}` : ""}</p>` : ""}` : ""}
+      ${c ? `<p>${c.nome}</p><p>CPF/CNPJ: ${formatarDoc(c.cpfCnpj ?? "")}</p><p>Contato: ${formatarTelefone(c.telefone)}</p>${c.telefoneSecundario ? `<p>Telefone 2: ${formatarTelefone(c.telefoneSecundario)}</p>` : ""}${c.endereco ? `<p>${c.endereco}${c.numero ? `, ${c.numero}` : ""}${c.bairro ? ` - ${c.bairro}` : ""}${c.cidade ? ` - ${c.cidade}/${c.uf}` : ""}</p>` : ""}` : ""}
       <p>Resp. técnico: ${EMPRESA.responsavelTecnico}</p>
     </div>
     <div style="border:1px solid #000;padding:6px">
@@ -855,7 +855,7 @@ const vistoria = (titulo: string, cv?: (typeof os.checklistEntrada) & { _fotosB6
       saida: osSanitizado.saida || new Date().toISOString().slice(0, 10),
     };
     for (const item of atualizada.itens) {
-      if (item.tipo === "peca" && item.origem === "estoque" && item.pecaId) {
+      if (item.aprovado && item.tipo === "peca" && item.origem === "estoque" && item.pecaId) {
         const peca = pecas.find((p) => p.id === item.pecaId);
         if (peca) {
           await salvarPeca(

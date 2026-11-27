@@ -219,7 +219,7 @@ function Painel() {
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">{os.status}</Badge>
                     <span className="font-display text-sm font-bold text-primary">
-                      {brl(totaisOS(os).total)}
+                      {brl(totaisOS(os, true).total)}
                     </span>
                   </div>
                 </Link>

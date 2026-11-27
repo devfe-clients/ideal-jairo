@@ -75,7 +75,7 @@ export function contasPagarMaoDeObra(
   const servicosPorMecanico = new Map<string, number>();
 
   for (const item of os.itens) {
-    if (item.tipo !== "servico") continue;
+    if (item.tipo !== "servico" || !item.aprovado) continue;
     const mecId = item.mecanicoId || os.mecanicoId || "";
     if (!mecId) continue;
     const total = item.valorUnitario * item.quantidade - item.desconto;
@@ -108,7 +108,7 @@ export function contasPagarMaoDeObra(
 export function comprasDaOS(os: OrdemServico): import("./schemas").Compra[] {
   const hoje = new Date().toISOString().slice(0, 10);
   return os.itens
-    .filter((i) => i.tipo === "peca" && i.origem === "autopecas" && i.fornecedorPeca)
+    .filter((i) => i.aprovado && i.tipo === "peca" && i.origem === "autopecas" && i.fornecedorPeca)
     .map((i) => ({
       id: novoId(),
       osId: os.id,

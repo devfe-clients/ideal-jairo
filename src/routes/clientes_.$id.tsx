@@ -40,6 +40,7 @@ const vazio = {
   nome: "",
   cpfCnpj: "",
   telefone: "",
+  telefoneSecundario: "",
   email: "",
   cep: "",
   endereco: "",
@@ -126,6 +127,20 @@ const form = useFormularioZod(clienteSchema, vazio);
               <MessageCircle className="mr-1 h-4 w-4" /> WhatsApp
             </a>
           </Button>
+          {cliente.telefoneSecundario ? (
+            <Button size="sm" variant="outline" asChild>
+              <a
+                href={linkWhatsApp(
+                  cliente.telefoneSecundario,
+                  `Olá ${cliente.nome.split(" ")[0]}, aqui é da Oficina Ideal Jairo.`,
+                )}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageCircle className="mr-1 h-4 w-4" /> WhatsApp 2
+              </a>
+            </Button>
+          ) : null}
           <Button size="sm" variant="outline" asChild>
             <Link to="/veiculos" search={{ cliente: id } as Record<string, string>}>
               <Car className="mr-1 h-4 w-4" /> Veículos
@@ -166,6 +181,26 @@ const form = useFormularioZod(clienteSchema, vazio);
           <CardContent className="grid gap-1 text-sm sm:grid-cols-2">
             <p><span className="text-muted-foreground">CPF/CNPJ:</span> {formatarDoc(cliente.cpfCnpj ?? "")}</p>
             <p><span className="text-muted-foreground">Telefone:</span> {formatarTelefone(cliente.telefone)}</p>
+            {cliente.telefoneSecundario ? (
+              <p className="flex items-center gap-2">
+                <span>
+                  <span className="text-muted-foreground">Telefone 2 / Recado:</span>{" "}
+                  {formatarTelefone(cliente.telefoneSecundario)}
+                </span>
+                <a
+                  href={linkWhatsApp(
+                    cliente.telefoneSecundario,
+                    `Olá ${cliente.nome.split(" ")[0]}, aqui é da Oficina Ideal Jairo.`,
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Chamar no WhatsApp"
+                  className="text-primary"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </a>
+              </p>
+            ) : null}
             {cliente.email ? <p><span className="text-muted-foreground">E-mail:</span> {cliente.email}</p> : null}
             {cliente.endereco ? (
               <p className="sm:col-span-2">
@@ -349,6 +384,12 @@ const form = useFormularioZod(clienteSchema, vazio);
               valor={formatarTelefone(String(form.valores["telefone"] ?? ""))}
               erro={form.erros["telefone"]}
               onChange={(v) => form.set("telefone", v)}
+            />
+            <CampoTexto
+              label="Telefone 2 / Recado (opcional)"
+              valor={formatarTelefone(String(form.valores["telefoneSecundario"] ?? ""))}
+              erro={form.erros["telefoneSecundario"]}
+              onChange={(v) => form.set("telefoneSecundario", v)}
             />
             <CampoTexto
               label="E-mail (opcional)"

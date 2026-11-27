@@ -73,7 +73,7 @@ function RelatoriosPage() {
     let custo = 0;
     let total = 0;
     for (const o of periodo) {
-      const t = totaisOS(o, false);
+      const t = totaisOS(o, true);
       servicos += t.totalServicos;
       pecasV += t.totalPecas;
       custo += t.custoPecas;
@@ -93,7 +93,7 @@ function RelatoriosPage() {
     const mapa = new Map<string, { mes: string; faturamento: number; custo: number }>();
     for (const o of periodo) {
       const chave = o.emissao.slice(0, 7);
-      const t = totaisOS(o, false);
+      const t = totaisOS(o, true);
       const atual = mapa.get(chave) ?? { mes: chave, faturamento: 0, custo: 0 };
       atual.faturamento += t.total;
       atual.custo += t.custoPecas;
@@ -105,7 +105,7 @@ function RelatoriosPage() {
   const topServicos = useMemo(() => {
     const mapa = new Map<string, number>();
     for (const o of periodo) {
-      for (const i of o.itens.filter((x) => x.tipo === "servico")) {
+      for (const i of o.itens.filter((x) => x.aprovado && x.tipo === "servico")) {
         mapa.set(i.descricao, (mapa.get(i.descricao) ?? 0) + i.quantidade);
       }
     }
@@ -118,7 +118,7 @@ function RelatoriosPage() {
   const topClientes = useMemo(() => {
     const mapa = new Map<string, number>();
     for (const o of periodo) {
-      mapa.set(o.clienteId, (mapa.get(o.clienteId) ?? 0) + totaisOS(o, false).total);
+      mapa.set(o.clienteId, (mapa.get(o.clienteId) ?? 0) + totaisOS(o, true).total);
     }
     return [...mapa.entries()]
       .map(([id, valor]) => ({

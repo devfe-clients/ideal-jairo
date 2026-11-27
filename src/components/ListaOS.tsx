@@ -182,7 +182,7 @@ const [excluindoSelecionados, setExcluindoSelecionados] = useState(false);
           {lista.map((o) => {
             const c = clientes.find((x) => x.id === o.clienteId);
             const v = veiculos.find((x) => x.id === o.veiculoId);
-            const t = totaisOS(o, o.tipo === "orcamento");
+            const t = totaisOS(o, true);
             return (
               <div key={o.id} className="relative">
                 {modoSelecao ? (

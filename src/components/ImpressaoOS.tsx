@@ -25,8 +25,8 @@ export function ImpressaoOS({
   mecanicos: Usuario[];
   ocultarVistoria?: boolean;
 }) {
-  const t = totaisOS(os, os.tipo === "orcamento");
-  const itens = os.tipo === "orcamento" ? os.itens.filter((i) => i.aprovado) : os.itens;
+  const t = totaisOS(os, true);
+  const itens = os.itens.filter((i) => i.aprovado);
   const servicos = itens.filter((i) => i.tipo === "servico");
   const pecas = itens.filter((i) => i.tipo === "peca");
   const nomeMecanico = (id?: string) => mecanicos.find((m) => m.id === id)?.nome;
@@ -197,6 +197,9 @@ return (
               <p>{cliente.nome}</p>
               <p>CPF/CNPJ: {formatarDoc(cliente.cpfCnpj ?? "")}</p>
               <p>Contato: {formatarTelefone(cliente.telefone)}</p>
+              {cliente.telefoneSecundario ? (
+                <p>Telefone 2: {formatarTelefone(cliente.telefoneSecundario)}</p>
+              ) : null}
               {cliente.endereco ? (
                 <p>
                   {cliente.endereco}
